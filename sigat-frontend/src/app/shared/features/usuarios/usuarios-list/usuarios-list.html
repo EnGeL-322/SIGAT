@@ -1,0 +1,55 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Seguridad</span>
+      <h2>Usuarios</h2>
+    </div>
+
+    <div class="actions">
+      <input [(ngModel)]="search" (input)="filtrar()" placeholder="Buscador">
+      <button class="primary-btn" (click)="openCreate()">Agregar usuario <span class="plus-chip">+</span></button>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-usuarios">
+      <span>ID</span>
+      <span>Nombre</span>
+      <span>Apellido</span>
+      <span>Email</span>
+      <span>Rol</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-usuarios" *ngFor="let item of filtrados">
+      <span>{{ item.id }}</span>
+      <span>{{ item.nombre }}</span>
+      <span>{{ item.apellido }}</span>
+      <span>{{ item.email }}</span>
+      <span>{{ item.rolNombre }}</span>
+      <span class="row-actions">
+        <button class="icon red" (click)="remove(item.id)">&#128465;</button>
+        <button class="icon yellow" (click)="openEdit(item)">&#9998;</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-card">
+      <h3>{{ editId ? 'Editar usuario' : 'Agregar usuario' }}</h3>
+
+      <form [formGroup]="form" class="form-grid" (ngSubmit)="save()">
+        <input formControlName="nombre" placeholder="Nombre">
+        <input formControlName="apellido" placeholder="Apellido">
+        <input formControlName="email" placeholder="Correo">
+        <input formControlName="password" type="password" placeholder="Contrasena">
+        <input formControlName="rolId" type="number" placeholder="Rol ID">
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>
+          <button type="submit" class="primary-btn">{{ editId ? 'Actualizar' : 'Agregar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,62 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Inventario</span>
+      <h2>Stock general</h2>
+    </div>
+
+    <div class="actions">
+      <input [(ngModel)]="searchMarca" (input)="filtrar()" placeholder="Buscar marca">
+      <input [(ngModel)]="searchModelo" (input)="filtrar()" placeholder="Buscar modelo">
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-inventario">
+      <span>ID</span>
+      <span>Marca</span>
+      <span>Modelo</span>
+      <span>Codigo</span>
+      <span>Stock</span>
+      <span>Estado</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-inventario" *ngFor="let item of filtrados">
+      <span>{{ item.id }}</span>
+      <span>{{ item.marca }}</span>
+      <span>{{ item.modelo }}</span>
+      <span>{{ item.codigo }}</span>
+      <span>{{ item.stockActual }}</span>
+      <span><b class="badge" [ngClass]="estadoClass(item.stockActual)">{{ estadoStock(item.stockActual) }}</b></span>
+      <span class="row-actions">
+        <button class="icon green" (click)="verDetalle(item)">&#128065;</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Ver detalle</h3>
+      <p><strong>Producto</strong> <span>{{ selected?.nombre }}</span></p>
+      <p><strong>Marca</strong> <span>{{ selected?.marca }}</span></p>
+      <p><strong>Modelo</strong> <span>{{ selected?.modelo }}</span></p>
+      <p><strong>Stock actual</strong> <span>{{ selected?.stockActual }}</span></p>
+
+      <h3>IMEI y equipos</h3>
+      <div class="mini-list">
+        <div class="mini-item" *ngFor="let imei of imeis">
+          <span>{{ imei.numero }}</span>
+          <b>{{ imei.estado }}</b>
+        </div>
+      </div>
+      <p *ngIf="!imeis.length">
+        <strong>Sin IMEI</strong>
+        <span>Este stock no tiene equipos IMEI registrados. Las nuevas compras generaran un IMEI automatico por unidad.</span>
+      </p>
+
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

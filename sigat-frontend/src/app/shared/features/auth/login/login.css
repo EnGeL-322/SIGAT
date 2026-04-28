@@ -1,0 +1,123 @@
+.auth-page {
+  position: relative;
+  min-height: 100vh;
+  background-image: url('/assets/images/bg-auth.png');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 236, 246, 0.36) 0%, rgba(208, 170, 229, 0.24) 48%, rgba(255, 255, 255, 0.18) 100%);
+}
+
+.auth-page::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 24%;
+  width: 300px;
+  height: 430px;
+  transform: translateX(-50%);
+  border-radius: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 100%);
+  box-shadow: 0 28px 48px rgba(110, 44, 126, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.auth-overlay {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  width: 230px;
+  align-self: flex-start;
+  margin-bottom: 14px;
+}
+
+.auth-card {
+  width: min(760px, 92%);
+  text-align: center;
+  margin-top: 10px;
+}
+
+.auth-card h1 {
+  margin: 0 0 32px;
+  font-size: clamp(42px, 7vw, 84px);
+  color: #fcfbff;
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  text-transform: uppercase;
+}
+
+.auth-card input {
+  width: 100%;
+  margin-bottom: 20px;
+  height: 58px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0 22px;
+  background: rgba(255, 255, 255, 0.33);
+  color: #ffffff;
+  font-size: 22px;
+  outline: none;
+  box-shadow: 0 10px 20px rgba(93, 52, 103, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.auth-card input::placeholder {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.forgot {
+  display: block;
+  text-align: left;
+  margin: 6px 0 28px;
+  color: #665c72;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.buttons button {
+  height: 76px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.36);
+  color: #665d67;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 24px rgba(116, 74, 121, 0.14);
+  backdrop-filter: blur(12px);
+}
+
+.error {
+  margin-top: 18px;
+  color: #7d1832;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .buttons {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

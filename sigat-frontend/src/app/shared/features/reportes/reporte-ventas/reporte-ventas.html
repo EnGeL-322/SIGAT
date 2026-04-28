@@ -1,0 +1,100 @@
+<section class="module-page">
+  <div class="module-top report-heading">
+    <div class="title-block">
+      <span class="module-eyebrow">Reportes</span>
+      <h2>Reporte de ventas</h2>
+    </div>
+
+    <div class="report-period">
+      <span>Tipo de periodo</span>
+      <button [class.active-report]="periodo === 'DIA'" (click)="cambiarPeriodo('DIA')">Dia</button>
+      <button [class.active-report]="periodo === 'SEMANA'" (click)="cambiarPeriodo('SEMANA')">Semana</button>
+      <button [class.active-report]="periodo === 'MES'" (click)="cambiarPeriodo('MES')">Mes</button>
+    </div>
+  </div>
+
+  <div class="report-tabs">
+    <a routerLink="/reportes/stock">Reporte de stock</a>
+    <a routerLink="/reportes/ventas" class="active-report">Reporte de ventas</a>
+    <a routerLink="/reportes/bajo-stock">Bajo stock</a>
+  </div>
+
+  <div class="report-filter-bar">
+    <label>Fecha</label>
+    <input type="date" [(ngModel)]="fecha" (change)="filtrar()">
+    <label>Cliente</label>
+    <select [(ngModel)]="clienteId" (change)="filtrar()">
+      <option value="TODOS">Todos</option>
+      <option *ngFor="let cliente of clientes" [ngValue]="cliente.id">
+        {{ cliente.nombre }} {{ cliente.apellido }}
+      </option>
+    </select>
+    <label>Producto</label>
+    <select [(ngModel)]="productoId" (change)="filtrar()">
+      <option value="TODOS">Todos</option>
+      <option *ngFor="let producto of productos" [ngValue]="producto.id">{{ producto.nombre }}</option>
+    </select>
+    <button class="icon green" (click)="filtrar()">OK</button>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-reporte-ventas">
+      <span>ID</span>
+      <span>Codigo venta</span>
+      <span>Fecha</span>
+      <span>Cliente</span>
+      <span>Producto</span>
+      <span>IMEI</span>
+      <span>Precio</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-reporte-ventas" *ngFor="let fila of filtrados; let i = index">
+      <span>{{ i + 1 }}</span>
+      <span>{{ fila.codigoVenta }}</span>
+      <span>{{ fila.fechaVenta | date:'dd/MM/yyyy' }}</span>
+      <span>{{ fila.clienteNombre }}</span>
+      <span>{{ fila.productoNombre }}</span>
+      <span>{{ fila.imeiNumero }}</span>
+      <span>S/ {{ fila.precioUnitario }}</span>
+      <span class="row-actions">
+        <button class="icon green" (click)="verDetalle(fila)">Ver</button>
+        <button class="icon yellow" (click)="imprimirFila(fila)">PDF</button>
+      </span>
+    </div>
+
+    <div class="empty-state" *ngIf="!filtrados.length">
+      No hay ventas para los filtros seleccionados.
+    </div>
+  </div>
+
+  <div class="report-summary">
+    <div class="report-metric money">
+      <span>Total vendido</span>
+      <strong>S/ {{ totalVendido() | number:'1.2-2' }}</strong>
+    </div>
+    <div class="report-metric">
+      <span>Cantidad de equipos</span>
+      <strong>{{ cantidadEquipos() }}</strong>
+    </div>
+    <div class="report-metric">
+      <span>Nro. de ventas</span>
+      <strong>{{ numeroVentas() }}</strong>
+    </div>
+    <button class="secondary-btn" (click)="exportarExcel()">Exportar Excel</button>
+    <button class="primary-btn" (click)="exportarPdf()">Exportar PDF</button>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle de venta</h3>
+      <p><strong>Codigo</strong> <span>{{ selected?.codigoVenta }}</span></p>
+      <p><strong>Cliente</strong> <span>{{ selected?.clienteNombre }}</span></p>
+      <p><strong>Producto</strong> <span>{{ selected?.productoNombre }}</span></p>
+      <p><strong>IMEI</strong> <span>{{ selected?.imeiNumero }}</span></p>
+      <p><strong>Precio</strong> <span>S/ {{ selected?.precioUnitario }}</span></p>
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

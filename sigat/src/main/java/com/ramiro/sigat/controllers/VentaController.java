@@ -22,7 +22,8 @@ public class VentaController {
             List<DetalleVentaDTO> detalles = detallesMap.stream()
                     .map(d -> DetalleVentaDTO.builder()
                             .productoId(((Number) d.get("productoId")).longValue())
-                            .imeiId(((Number) d.get("imeiId")).longValue())
+                            .cantidad(((Number) d.getOrDefault("cantidad", 1)).intValue())
+                            .imeiId(d.get("imeiId") == null ? null : ((Number) d.get("imeiId")).longValue())
                             .precioUnitario(((Number) d.get("precioUnitario")).doubleValue())
                             .build())
                     .toList();

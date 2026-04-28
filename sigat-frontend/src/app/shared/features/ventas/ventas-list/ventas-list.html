@@ -1,0 +1,54 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Operaciones</span>
+      <h2>Ventas</h2>
+    </div>
+
+    <div class="actions">
+      <a class="primary-btn" routerLink="/ventas/nueva">Nueva venta <span class="plus-chip">+</span></a>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-ventas">
+      <span>ID</span>
+      <span>Cliente</span>
+      <span>Numero</span>
+      <span>Total</span>
+      <span>Vendedor</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-ventas" *ngFor="let item of ventas">
+      <span>{{ item.id }}</span>
+      <span>{{ item.clienteNombre }}</span>
+      <span>{{ item.numeroVenta }}</span>
+      <span>{{ item.total }}</span>
+      <span>SIGAT</span>
+      <span class="row-actions">
+        <button class="icon green" (click)="verDetalle(item)">&#128065;</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle de venta</h3>
+      <p><strong>Numero</strong> <span>{{ selected?.numeroVenta }}</span></p>
+      <p><strong>Cliente</strong> <span>{{ selected?.clienteNombre }}</span></p>
+      <p><strong>Total</strong> <span>{{ selected?.total }}</span></p>
+
+      <div class="mini-list">
+        <div class="mini-item" *ngFor="let d of detalles">
+          <span>{{ d.productoNombre }}</span>
+          <span>{{ d.imeiNumero }}</span>
+          <span>{{ d.precioUnitario }}</span>
+        </div>
+      </div>
+
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

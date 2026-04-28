@@ -52,6 +52,15 @@ public class CompraController {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/{id}/detalles")
+    public ResponseEntity<ResponseDTO> obtenerDetalles(@PathVariable Long id) {
+        try {
+            List<DetalleCompraDTO> detalles = compraService.obtenerDetalles(id);
+            return ResponseEntity.ok(new ResponseDTO(true, "Detalles obtenidos", detalles));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
     @GetMapping("/proveedor/{proveedorId}")
     public ResponseEntity<ResponseDTO> listarPorProveedor(@PathVariable Long proveedorId) {
         try {

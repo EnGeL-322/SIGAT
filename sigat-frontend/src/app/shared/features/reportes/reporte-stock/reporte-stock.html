@@ -1,0 +1,60 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Reportes</span>
+      <h2>Reporte de stock</h2>
+    </div>
+  </div>
+
+  <div class="report-tabs">
+    <a routerLink="/reportes/stock" class="active-report">Reporte de stock</a>
+    <a routerLink="/reportes/ventas">Reporte de ventas</a>
+    <a routerLink="/reportes/bajo-stock">Bajo stock</a>
+  </div>
+
+  <div class="report-filter-bar">
+    <label>Fecha</label>
+    <input type="date" [(ngModel)]="fecha">
+    <label>Marca</label>
+    <input [(ngModel)]="marca" (input)="filtrar()" placeholder="Buscar marca">
+    <label>Modelo</label>
+    <input [(ngModel)]="modelo" (input)="filtrar()" placeholder="Buscar modelo">
+    <select [(ngModel)]="estado" (change)="filtrar()">
+      <option value="TODOS">Todos</option>
+      <option value="DISPONIBLE">Disponible</option>
+      <option value="STOCK BAJO">Stock bajo</option>
+      <option value="AGOTADO">Agotado</option>
+    </select>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-reporte-stock">
+      <span>ID</span>
+      <span>Marca</span>
+      <span>Modelo</span>
+      <span>Codigo</span>
+      <span>Precio</span>
+      <span>Stock actual</span>
+      <span>Stock minimo</span>
+      <span>Estado</span>
+    </div>
+
+    <div class="table-row grid-reporte-stock" *ngFor="let item of filtrados; let i = index">
+      <span>{{ i + 1 }}</span>
+      <span>{{ item.marca }}</span>
+      <span>{{ item.modelo }}</span>
+      <span>{{ item.codigo }}</span>
+      <span>{{ item.precio }}</span>
+      <span>{{ item.stockActual }}</span>
+      <span>{{ item.stockMinimo }}</span>
+      <span><b class="badge" [ngClass]="estadoClass(item.stockActual, item.stockMinimo)">{{ estadoProducto(item.stockActual, item.stockMinimo) }}</b></span>
+    </div>
+  </div>
+
+  <div class="report-summary">
+    <strong>Total stock: {{ totalStock() }}</strong>
+    <span>Productos: {{ filtrados.length }}</span>
+    <button class="secondary-btn" (click)="exportarExcel()">Exportar Excel</button>
+    <button class="primary-btn" (click)="exportarPdf()">Exportar PDF</button>
+  </div>
+</section>

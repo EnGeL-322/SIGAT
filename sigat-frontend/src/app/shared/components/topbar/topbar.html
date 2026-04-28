@@ -1,0 +1,26 @@
+<header class="topbar">
+  <button
+    class="topbar-left menu-trigger"
+    type="button"
+    [attr.aria-expanded]="menuOpen"
+    aria-controls="sigat-sidebar"
+    aria-label="Mostrar u ocultar menu lateral"
+    (click)="menuToggle.emit()"
+  >
+    <span class="menu-icon" aria-hidden="true">&#9776;</span>
+
+    <span class="brand-copy">
+      <span>Panel SIGAT</span>
+      <small>{{ menuOpen ? 'Ocultar menu' : 'Mostrar menu' }}</small>
+    </span>
+  </button>
+
+  <div class="topbar-center">
+    <input type="text" placeholder="Buscador">
+    <span class="search-icon">&#9906;</span>
+  </div>
+
+  <div class="topbar-right">
+    <img src="/assets/images/logo-sigat.png" alt="SIGAT">
+  </div>
+</header>

@@ -1,0 +1,32 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Operaciones</span>
+      <h2>Compras</h2>
+    </div>
+
+    <div class="actions">
+      <a class="primary-btn" routerLink="/compras/nueva">Nueva compra <span class="plus-chip">+</span></a>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-compras">
+      <span>ID</span>
+      <span>Numero</span>
+      <span>Proveedor</span>
+      <span>Total</span>
+      <span>Estado</span>
+      <span>Fecha</span>
+    </div>
+
+    <div class="table-row grid-compras" *ngFor="let item of compras">
+      <span>{{ item.id }}</span>
+      <span>{{ item.numeroCompra }}</span>
+      <span>{{ item.proveedorNombre }}</span>
+      <span>{{ item.total }}</span>
+      <span>{{ item.estado }}</span>
+      <span>{{ item.fechaCompra | date:'short' }}</span>
+    </div>
+  </div>
+</section>

@@ -1,5 +1,6 @@
 package com.ramiro.sigat.dto;
 import lombok.*;
+import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,4 +14,5 @@ public class DetalleCompraDTO {
     private Integer cantidad;
     private Double precioUnitario;
     private Double subtotal;
+    private List<IMEIDTO> imeis;
 }

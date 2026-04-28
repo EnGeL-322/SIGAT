@@ -24,6 +24,22 @@ public class IMEI {
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "compra_id")
+    private Compra compra;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "detalle_compra_id")
+    private DetalleCompra detalleCompra;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "venta_id")
+    private Venta venta;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "detalle_venta_id")
+    private DetalleVenta detalleVenta;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private EstadoIMEI estado; // EN_STOCK, VENDIDO, DEFECTUOSO

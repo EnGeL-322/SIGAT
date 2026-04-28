@@ -9,6 +9,10 @@ import java.util.List;
 public interface IMEIRepository extends JpaRepository<IMEI, Long> {
     Optional<IMEI> findByNumero(String numero);
     List<IMEI> findByProductoId(Long productoId);
+    List<IMEI> findByCompraId(Long compraId);
+    List<IMEI> findByDetalleCompraId(Long detalleCompraId);
+    List<IMEI> findByVentaId(Long ventaId);
+    List<IMEI> findByDetalleVentaId(Long detalleVentaId);
     List<IMEI> findByEstado(IMEI.EstadoIMEI estado);
     List<IMEI> findByClienteId(Long clienteId);
 }

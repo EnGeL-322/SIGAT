@@ -12,6 +12,7 @@ public class DetalleVentaDTO {
     private Long ventaId;
     private Long productoId;
     private String productoNombre;
+    private Integer cantidad;
     private Long imeiId;
     private String imeiNumero;
     private Double precioUnitario;

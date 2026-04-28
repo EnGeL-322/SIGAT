@@ -1,0 +1,77 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Maestros</span>
+      <h2>Producto</h2>
+    </div>
+
+    <div class="actions">
+      <input [(ngModel)]="search" (input)="filtrar()" placeholder="Buscador">
+      <button class="primary-btn" (click)="openCreate()">Agregar producto <span class="plus-chip">+</span></button>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-productos">
+      <span>ID</span>
+      <span>Marca</span>
+      <span>Modelo</span>
+      <span>Codigo</span>
+      <span>Precio</span>
+      <span>Stock</span>
+      <span>Estado</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-productos" *ngFor="let item of productosFiltrados">
+      <span>{{ item.id }}</span>
+      <span>{{ item.marca }}</span>
+      <span>{{ item.modelo }}</span>
+      <span>{{ item.codigo }}</span>
+      <span>{{ item.precio }}</span>
+      <span>{{ item.stockActual }}</span>
+      <span><b class="badge" [ngClass]="estadoClass(item.stockActual)">{{ estadoStock(item.stockActual) }}</b></span>
+      <span class="row-actions">
+        <button class="icon red" (click)="remove(item.id)">&#128465;</button>
+        <button class="icon yellow" (click)="openEdit(item)">&#9998;</button>
+        <button class="icon green" (click)="openDetail(item)">&#128065;</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-card">
+      <h3>{{ editId ? 'Editar producto' : 'Agregar producto' }}</h3>
+
+      <form [formGroup]="form" class="form-grid" (ngSubmit)="save()">
+        <input formControlName="marca" placeholder="Marca">
+        <input formControlName="modelo" placeholder="Modelo">
+        <input formControlName="nombre" placeholder="Nombre">
+        <input formControlName="codigo" placeholder="Codigo">
+        <input formControlName="precio" type="number" placeholder="Precio">
+        <input formControlName="stockMinimo" type="number" placeholder="Stock minimo">
+        <textarea formControlName="descripcion" placeholder="Descripcion"></textarea>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>
+          <button type="submit" class="primary-btn">{{ editId ? 'Actualizar' : 'Agregar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle producto</h3>
+      <p><strong>Nombre</strong> <span>{{ selected?.nombre }}</span></p>
+      <p><strong>Marca</strong> <span>{{ selected?.marca }}</span></p>
+      <p><strong>Modelo</strong> <span>{{ selected?.modelo }}</span></p>
+      <p><strong>Codigo</strong> <span>{{ selected?.codigo }}</span></p>
+      <p><strong>Precio</strong> <span>{{ selected?.precio }}</span></p>
+      <p><strong>Stock</strong> <span>{{ selected?.stockActual }}</span></p>
+      <p><strong>Descripcion</strong> <span>{{ selected?.descripcion }}</span></p>
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,73 @@
+<section class="module-page">
+  <div class="module-top">
+    <div class="title-block">
+      <span class="module-eyebrow">Maestros</span>
+      <h2>Proveedores</h2>
+    </div>
+
+    <div class="actions">
+      <input [(ngModel)]="search" (input)="filtrar()" placeholder="Buscador">
+      <button class="primary-btn" (click)="openCreate()">Agregar proveedor <span class="plus-chip">+</span></button>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-proveedores">
+      <span>ID</span>
+      <span>RUC</span>
+      <span>Razon social</span>
+      <span>Contacto</span>
+      <span>Telefono</span>
+      <span>Correo</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="table-row grid-proveedores" *ngFor="let item of filtrados">
+      <span>{{ item.id }}</span>
+      <span>{{ item.ruc }}</span>
+      <span>{{ item.nombre }}</span>
+      <span>{{ item.contacto }}</span>
+      <span>{{ item.telefono }}</span>
+      <span>{{ item.email }}</span>
+      <span class="row-actions">
+        <button class="icon red" (click)="remove(item.id)">&#128465;</button>
+        <button class="icon yellow" (click)="openEdit(item)">&#9998;</button>
+        <button class="icon green" (click)="openDetail(item)">&#128065;</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-card">
+      <h3>{{ editId ? 'Editar proveedor' : 'Agregar proveedor' }}</h3>
+
+      <form [formGroup]="form" class="form-grid" (ngSubmit)="save()">
+        <input formControlName="ruc" placeholder="RUC">
+        <input formControlName="nombre" placeholder="Razon social">
+        <input formControlName="contacto" placeholder="Nombre de contacto">
+        <input formControlName="telefono" placeholder="Telefono">
+        <input formControlName="email" placeholder="Correo">
+        <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>
+          <button type="submit" class="primary-btn">{{ editId ? 'Actualizar' : 'Agregar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle proveedor</h3>
+      <p><strong>RUC</strong> <span>{{ selected?.ruc }}</span></p>
+      <p><strong>Razon social</strong> <span>{{ selected?.nombre }}</span></p>
+      <p><strong>Correo</strong> <span>{{ selected?.email }}</span></p>
+      <p><strong>Telefono</strong> <span>{{ selected?.telefono }}</span></p>
+      <p><strong>Direccion</strong> <span>{{ selected?.direccion }}</span></p>
+      <p><strong>Contacto</strong> <span>{{ selected?.contacto }}</span></p>
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

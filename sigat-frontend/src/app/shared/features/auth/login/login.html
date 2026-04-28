@@ -1,0 +1,25 @@
+<div class="auth-page">
+  <div class="auth-overlay">
+    <img class="logo" src="/assets/images/logo-sigat.png" alt="SIGAT">
+
+    <div class="auth-card">
+      <h1>INICIAR SESION</h1>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+        <input type="email" formControlName="email" placeholder="CORREO ELECTRONICO">
+        <input type="password" formControlName="password" placeholder="CONTRASENA">
+
+        <a class="forgot">SE TE OLVIDO LA CONTRASENA?</a>
+
+        <div class="buttons">
+          <button type="submit" [disabled]="loading">
+            {{ loading ? 'INGRESANDO...' : 'INICIAR SESION' }}
+          </button>
+          <button type="button" routerLink="/register">REGISTRARTE</button>
+        </div>
+
+        <p class="error" *ngIf="error">{{ error }}</p>
+      </form>
+    </div>
+  </div>
+</div>

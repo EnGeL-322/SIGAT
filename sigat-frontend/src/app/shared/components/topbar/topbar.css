@@ -37,6 +37,7 @@
 .menu-icon {
   width: 46px;
   height: 46px;
+  min-width: 46px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.34);
   color: #2d5ab5;
@@ -45,6 +46,35 @@
   display: grid;
   place-items: center;
   transition: transform 180ms ease, background 180ms ease;
+}
+
+.menu-bars,
+.menu-bars::before,
+.menu-bars::after {
+  display: block;
+  width: 24px;
+  height: 3px;
+  border-radius: 999px;
+  background: #2d5ab5;
+}
+
+.menu-bars {
+  position: relative;
+}
+
+.menu-bars::before,
+.menu-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.menu-bars::before {
+  top: -8px;
+}
+
+.menu-bars::after {
+  top: 8px;
 }
 
 .brand-copy {
@@ -84,7 +114,33 @@
   top: 50%;
   transform: translateY(-50%);
   color: #54627f;
-  font-size: 18px;
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.search-icon::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #54627f;
+  border-radius: 50%;
+}
+
+.search-icon::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 9px;
+  height: 2px;
+  border-radius: 999px;
+  background: #54627f;
+  transform: rotate(45deg);
+  transform-origin: center;
 }
 
 .topbar-right img {

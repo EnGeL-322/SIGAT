@@ -7,7 +7,9 @@
     aria-label="Mostrar u ocultar menu lateral"
     (click)="menuToggle.emit()"
   >
-    <span class="menu-icon" aria-hidden="true">&#9776;</span>
+    <span class="menu-icon" aria-hidden="true">
+      <span class="menu-bars"></span>
+    </span>
 
     <span class="brand-copy">
       <span>Panel SIGAT</span>
@@ -17,7 +19,7 @@
 
   <div class="topbar-center">
     <input type="text" placeholder="Buscador">
-    <span class="search-icon">&#9906;</span>
+    <span class="search-icon" aria-hidden="true"></span>
   </div>
 
   <div class="topbar-right">

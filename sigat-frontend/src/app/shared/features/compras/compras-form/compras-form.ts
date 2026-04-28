@@ -18,7 +18,11 @@ export class ComprasFormComponent implements OnInit {
   error = '';
 
   compra = {
-    proveedorId: null as number | null
+    proveedorId: null as number | null,
+    fecha: new Date().toISOString().slice(0, 10),
+    tipoComprobante: '',
+    numeroComprobante: '',
+    observacion: ''
   };
 
   detalle = {
@@ -88,5 +92,13 @@ export class ComprasFormComponent implements OnInit {
 
   total(): number {
     return this.detalles.reduce((sum, d) => sum + (d.cantidad * d.precioUnitario), 0);
+  }
+
+  imeisCargados(detalle: any): string {
+    return `${detalle.cantidad}/${detalle.cantidad}`;
+  }
+
+  estadoDetalle(detalle: any): string {
+    return detalle.cantidad > 0 ? 'Terminado' : 'En proceso';
   }
 }

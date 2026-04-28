@@ -36,15 +36,26 @@
     <div class="modal-card detail-card">
       <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
       <h3>Detalle de venta</h3>
-      <p><strong>Numero</strong> <span>{{ selected?.numeroVenta }}</span></p>
-      <p><strong>Cliente</strong> <span>{{ selected?.clienteNombre }}</span></p>
-      <p><strong>Total</strong> <span>{{ selected?.total }}</span></p>
+      <p><strong>Numero de venta</strong> <span>{{ selected?.numeroVenta }}</span></p>
+      <p><strong>Cliente comprador</strong> <span>{{ selected?.clienteNombre }}</span></p>
+      <p><strong>Total vendido</strong> <span>S/ {{ selected?.total }}</span></p>
 
+      <h3 class="detail-subtitle">Equipos vendidos en esta venta</h3>
       <div class="mini-list">
-        <div class="mini-item" *ngFor="let d of detalles">
-          <span>{{ d.productoNombre }}</span>
-          <span>{{ d.imeiNumero }}</span>
-          <span>{{ d.precioUnitario }}</span>
+        <div class="mini-item sale-detail-item" *ngFor="let d of detalles; let i = index">
+          <div class="detail-line-number">{{ i + 1 }}</div>
+          <div>
+            <small>Producto vendido</small>
+            <span>{{ d.productoNombre }}</span>
+          </div>
+          <div>
+            <small>IMEI del equipo</small>
+            <span>{{ d.imeiNumero }}</span>
+          </div>
+          <div>
+            <small>Precio unitario</small>
+            <span>S/ {{ d.precioUnitario }}</span>
+          </div>
         </div>
       </div>
 

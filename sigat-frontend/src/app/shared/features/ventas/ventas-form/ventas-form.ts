@@ -18,7 +18,11 @@ export class VentasFormComponent implements OnInit {
   error = '';
 
   venta = {
-    clienteId: null as number | null
+    clienteId: null as number | null,
+    fecha: new Date().toISOString().slice(0, 10),
+    tipoComprobante: '',
+    dni: '',
+    vendedor: 'SIGAT'
   };
 
   detalle = {
@@ -38,6 +42,11 @@ export class VentasFormComponent implements OnInit {
       this.productos = r?.datos || [];
       this.cdr.detectChanges();
     });
+  }
+
+  clienteCambiado(): void {
+    const cliente = this.clientes.find(c => c.id == this.venta.clienteId);
+    this.venta.dni = cliente?.cedula || '';
   }
 
   agregarDetalle(): void {

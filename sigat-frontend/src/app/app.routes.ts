@@ -12,7 +12,6 @@ import { ComprasFormComponent } from './shared/features/compras/compras-form/com
 import { VentasListComponent } from './shared/features/ventas/ventas-list/ventas-list';
 import { VentasFormComponent } from './shared/features/ventas/ventas-form/ventas-form';
 import { UsuariosListComponent } from './shared/features/usuarios/usuarios-list/usuarios-list';
-import { ReporteStockComponent } from './shared/features/reportes/reporte-stock/reporte-stock';
 import { ReporteVentasComponent } from './shared/features/reportes/reporte-ventas/reporte-ventas';
 import { ReporteBajoStockComponent } from './shared/features/reportes/reporte-bajo-stock/reporte-bajo-stock';
 
@@ -35,7 +34,8 @@ export const routes: Routes = [
       { path: 'compras/nueva', component: ComprasFormComponent },
       { path: 'ventas', component: VentasListComponent },
       { path: 'ventas/nueva', component: VentasFormComponent },
-      { path: 'reportes/stock', component: ReporteStockComponent },
+      { path: 'reportes', redirectTo: 'reportes/ventas', pathMatch: 'full' },
+      { path: 'reportes/stock', redirectTo: 'reportes/ventas', pathMatch: 'full' },
       { path: 'reportes/ventas', component: ReporteVentasComponent },
       { path: 'reportes/bajo-stock', component: ReporteBajoStockComponent },
       { path: 'usuarios', component: UsuariosListComponent }

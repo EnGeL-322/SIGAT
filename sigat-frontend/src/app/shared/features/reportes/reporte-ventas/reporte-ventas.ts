@@ -22,6 +22,8 @@ export class ReporteVentasComponent implements OnInit {
   filtrados: any[] = [];
   selected: any = null;
   detailModal = false;
+  loading = false;
+  error = '';
 
   fecha = '';
   clienteId: number | 'TODOS' = 'TODOS';
@@ -31,6 +33,7 @@ export class ReporteVentasComponent implements OnInit {
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
+    this.loading = true;
     forkJoin({
       ventas: this.api.obtenerVentas().pipe(catchError(() => of({ datos: [] }))),
       clientes: this.api.obtenerClientes().pipe(catchError(() => of({ datos: [] }))),
@@ -79,15 +82,15 @@ export class ReporteVentasComponent implements OnInit {
   }
 
   exportarExcel(): void {
-    const rows = this.filtrados.map(fila => ({
-      CodigoVenta: fila.codigoVenta,
-      Fecha: this.formatearFecha(fila.fechaVenta),
-      Cliente: fila.clienteNombre,
-      Producto: fila.productoNombre,
-      IMEI: fila.imeiNumero,
-      Precio: fila.precioUnitario
-    }));
-    this.descargarCsv('reporte-ventas.csv', rows);
+    const rows = this.filtrados.map(fila => [
+      fila.codigoVenta,
+      this.formatearFecha(fila.fechaVenta),
+      fila.clienteNombre,
+      fila.productoNombre,
+      fila.imeiNumero,
+      fila.precioUnitario
+    ]);
+    this.descargarExcel('reporte-ventas.xls', rows);
   }
 
   exportarPdf(): void {
@@ -98,6 +101,7 @@ export class ReporteVentasComponent implements OnInit {
     if (!this.ventas.length) {
       this.filas = [];
       this.filtrar();
+      this.loading = false;
       this.cdr.detectChanges();
       return;
     }
@@ -119,6 +123,7 @@ export class ReporteVentasComponent implements OnInit {
     forkJoin(requests).subscribe((grupos: any[]) => {
       this.filas = grupos.flat();
       this.filtrar();
+      this.loading = false;
       this.cdr.detectChanges();
     });
   }
@@ -164,10 +169,15 @@ export class ReporteVentasComponent implements OnInit {
     return date ? date.toLocaleDateString('es-PE') : '';
   }
 
-  private descargarCsv(nombre: string, rows: any[]): void {
-    const headers = Object.keys(rows[0] || { Reporte: '' });
-    const csv = [headers.join(';'), ...rows.map(row => headers.map(header => row[header] ?? '').join(';'))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  private descargarExcel(nombre: string, rows: any[][]): void {
+    const htmlRows = rows.map(row => `<tr>${row.map(col => `<td>${col ?? ''}</td>`).join('')}</tr>`).join('');
+    const html = `
+      <table>
+        <thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>IMEI</th><th>Precio</th></tr></thead>
+        <tbody>${htmlRows}</tbody>
+      </table>
+    `;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = nombre;
@@ -176,6 +186,7 @@ export class ReporteVentasComponent implements OnInit {
   }
 
   private imprimirReporte(titulo: string, rows: any[]): void {
+    const total = rows.reduce((sum, fila) => sum + Number(fila.precioUnitario || fila.subtotal || 0), 0);
     const htmlRows = rows.map(fila => `
       <tr>
         <td>${fila.codigoVenta ?? ''}</td>
@@ -195,7 +206,7 @@ export class ReporteVentasComponent implements OnInit {
       </style></head><body>
       <h1>${titulo}</h1>
       <p>Fecha base: ${this.fecha}</p>
-      <p>Total vendido: S/ ${this.totalVendido().toFixed(2)}</p>
+      <p>Total vendido: S/ ${total.toFixed(2)}</p>
       <table><thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>IMEI</th><th>Precio</th></tr></thead><tbody>${htmlRows}</tbody></table>
       </body></html>
     `);

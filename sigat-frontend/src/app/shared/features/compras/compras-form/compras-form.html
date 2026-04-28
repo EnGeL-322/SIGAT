@@ -1,53 +1,99 @@
-<section class="module-page">
-  <div class="module-top">
-    <div class="title-block">
-      <span class="module-eyebrow">Operaciones</span>
-      <h2>Compras</h2>
+<section class="module-page operation-form-page">
+  <div class="operation-toolbar">
+    <div class="operation-crumb">
+      <span class="crumb-icon">#</span>
+      <strong>Operaciones</strong>
+      <span>-</span>
+      <span>Compras</span>
     </div>
 
-    <div class="actions">
-      <a class="secondary-btn" routerLink="/compras">Listado de compras</a>
-    </div>
+    <a class="secondary-btn" routerLink="/compras">Listado de compras</a>
   </div>
 
-  <div class="table-shell purchase-form-shell">
-    <div class="section-title">Datos generales</div>
+  <div class="operation-panel">
+    <div class="operation-section-title violet">Datos generales</div>
 
-    <div class="form-grid buy-grid">
-      <select [(ngModel)]="compra.proveedorId">
-        <option [ngValue]="null">Proveedor</option>
-        <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
-      </select>
+    <div class="operation-general-grid compra-general-grid">
+      <label>
+        <span>Proveedor</span>
+        <select [(ngModel)]="compra.proveedorId">
+          <option [ngValue]="null">Proveedor</option>
+          <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Fecha</span>
+        <input type="date" [(ngModel)]="compra.fecha">
+      </label>
+
+      <label>
+        <span>Tipo de comprobante</span>
+        <select [(ngModel)]="compra.tipoComprobante">
+          <option value="">Tipo de comprobante</option>
+          <option value="BOLETA">Boleta</option>
+          <option value="FACTURA">Factura</option>
+          <option value="GUIA">Guia</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Numero comprobante</span>
+        <input [(ngModel)]="compra.numeroComprobante" placeholder="Numero comprobante">
+      </label>
+
+      <label class="observation-field">
+        <span>Observacion</span>
+        <textarea [(ngModel)]="compra.observacion"></textarea>
+      </label>
     </div>
 
-    <div class="section-title second">Detalle compra</div>
+    <div class="operation-section-title cyan">Detalle compra</div>
 
-    <div class="form-grid buy-grid">
+    <div class="purchase-detail-header">
+      <span>Producto</span>
+      <span>Cantidad</span>
+      <span>Precio unitario</span>
+      <span>IMEIs cargados</span>
+      <span>Estado</span>
+      <span>Procesar IMEIs</span>
+    </div>
+
+    <div class="purchase-detail-editor">
       <select [(ngModel)]="detalle.productoId">
         <option [ngValue]="null">Producto</option>
         <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
       </select>
-
-      <input type="number" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
+      <input type="number" min="1" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
       <input type="number" [(ngModel)]="detalle.precioUnitario" placeholder="Precio unitario">
-      <button class="icon blue" (click)="agregarDetalle()">+</button>
+      <input disabled [value]="detalle.cantidad ? '0/' + detalle.cantidad : '0/0'">
+      <input disabled value="En proceso">
+      <button class="icon blue" type="button" (click)="agregarDetalle()">+</button>
+    </div>
+
+    <div class="purchase-detail-list" *ngIf="detalles.length">
+      <div class="purchase-detail-row" *ngFor="let d of detalles; let i = index">
+        <span>{{ d.productoNombre }}</span>
+        <span>{{ d.cantidad }}</span>
+        <span>S/ {{ d.precioUnitario }}</span>
+        <span>{{ imeisCargados(d) }}</span>
+        <span>{{ estadoDetalle(d) }}</span>
+        <button class="icon red" type="button" (click)="eliminarDetalle(i)">&#215;</button>
+      </div>
     </div>
 
     <p class="form-error" *ngIf="error">{{ error }}</p>
 
-    <div class="mini-list details-list" *ngIf="detalles.length">
-      <div class="mini-item detail-row" *ngFor="let d of detalles; let i = index">
-        <span>{{ d.productoNombre }}</span>
-        <span>{{ d.cantidad }}</span>
-        <span>{{ d.precioUnitario }}</span>
-        <span>{{ d.cantidad * d.precioUnitario }}</span>
-        <button class="icon red" (click)="eliminarDetalle(i)">&#128465;</button>
+    <div class="operation-bottom">
+      <div class="add-product-block">
+        <span>Agregar P.</span>
+        <button class="icon blue" type="button" (click)="agregarDetalle()">+</button>
       </div>
-    </div>
 
-    <div class="footer-actions">
-      <div class="total-box">TOTAL: {{ total() }}</div>
-      <button class="primary-btn" (click)="guardar()">Guardar compra</button>
+      <div class="operation-save-area">
+        <div class="total-box">TOTAL: {{ total() | number:'1.2-2' }}</div>
+        <button class="primary-btn blue-save" type="button" (click)="guardar()">Guardar compra</button>
+      </div>
     </div>
   </div>
 </section>

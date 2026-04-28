@@ -1,53 +1,118 @@
-<section class="module-page">
-  <div class="module-top">
-    <div class="title-block">
-      <span class="module-eyebrow">Operaciones</span>
-      <h2>Ventas</h2>
+<section class="module-page operation-form-page">
+  <div class="operation-toolbar">
+    <div class="operation-crumb">
+      <span class="crumb-icon">#</span>
+      <strong>Operaciones</strong>
+      <span>-</span>
+      <span>Ventas</span>
     </div>
 
-    <div class="actions">
-      <a class="secondary-btn" routerLink="/ventas">Listado de ventas</a>
-    </div>
+    <a class="secondary-btn" routerLink="/ventas">Listado de ventas</a>
   </div>
 
-  <div class="table-shell purchase-form-shell">
-    <div class="section-title">Datos generales</div>
+  <div class="operation-panel sale-panel">
+    <div class="operation-section-title violet">Datos generales</div>
 
-    <div class="form-grid buy-grid">
-      <select [(ngModel)]="venta.clienteId">
-        <option [ngValue]="null">Cliente</option>
-        <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option>
-      </select>
+    <div class="operation-general-grid venta-general-grid">
+      <label>
+        <span>Cliente</span>
+        <select [(ngModel)]="venta.clienteId" (ngModelChange)="clienteCambiado()">
+          <option [ngValue]="null">Cliente</option>
+          <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Fecha</span>
+        <input type="date" [(ngModel)]="venta.fecha">
+      </label>
+
+      <label>
+        <span>Tipo de comprobante</span>
+        <select [(ngModel)]="venta.tipoComprobante">
+          <option value="">Tipo de comprobante</option>
+          <option value="BOLETA">Boleta</option>
+          <option value="FACTURA">Factura</option>
+        </select>
+      </label>
+
+      <label>
+        <span>DNI</span>
+        <input [(ngModel)]="venta.dni" placeholder="DNI">
+      </label>
+
+      <label>
+        <span>Vendedor</span>
+        <input [(ngModel)]="venta.vendedor" placeholder="Vendedor">
+      </label>
     </div>
 
-    <div class="section-title second">Detalle venta</div>
+    <div class="sale-detail-area">
+      <div>
+        <div class="operation-section-title cyan sale-title">Detalle venta</div>
+        <div class="sale-detail-editor">
+          <label>
+            <span>Producto</span>
+            <select [(ngModel)]="detalle.productoId">
+              <option [ngValue]="null">Producto</option>
+              <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
+            </select>
+          </label>
 
-    <div class="form-grid buy-grid">
-      <select [(ngModel)]="detalle.productoId">
-        <option [ngValue]="null">Producto</option>
-        <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
-      </select>
+          <label>
+            <span>Cantidad</span>
+            <input type="number" min="1" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
+          </label>
 
-      <input type="number" min="1" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
-      <input type="number" [(ngModel)]="detalle.precioUnitario" placeholder="Precio unitario">
-      <button class="icon blue" (click)="agregarDetalle()">+</button>
+          <label>
+            <span>Precio unitario</span>
+            <input type="number" [(ngModel)]="detalle.precioUnitario" placeholder="Precio unitario">
+          </label>
+
+          <button class="icon blue" type="button" (click)="agregarDetalle()">+</button>
+        </div>
+
+        <div class="add-product-block sale-add-block">
+          <span>Agregar P.</span>
+          <button class="icon blue" type="button" (click)="agregarDetalle()">+</button>
+        </div>
+      </div>
+
+      <div class="sale-summary-card">
+        <div class="sale-summary-accent"></div>
+        <div class="sale-summary-table">
+          <div class="sale-summary-head">
+            <span></span>
+            <span>Producto</span>
+            <span>Precio unitario</span>
+          </div>
+          <div class="sale-summary-row" *ngFor="let d of detalles; let i = index">
+            <span>{{ i + 1 }}</span>
+            <span>{{ d.productoNombre }}</span>
+            <span>{{ d.precioUnitario }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="mini-list details-list" *ngIf="detalles.length">
-      <div class="mini-item detail-row" *ngFor="let d of detalles; let i = index">
+    <div class="sale-detail-list" *ngIf="detalles.length">
+      <div class="sale-detail-row" *ngFor="let d of detalles; let i = index">
         <span>{{ d.productoNombre }}</span>
         <span>Cantidad: {{ d.cantidad }}</span>
         <span>S/ {{ d.precioUnitario }}</span>
         <span>S/ {{ d.subtotal }}</span>
-        <button class="icon red" (click)="eliminarDetalle(i)">&#128465;</button>
+        <button class="icon red" type="button" (click)="eliminarDetalle(i)">&#215;</button>
       </div>
     </div>
 
     <p class="form-error" *ngIf="error">{{ error }}</p>
 
-    <div class="footer-actions">
-      <div class="total-box">TOTAL: {{ total() }}</div>
-      <button class="primary-btn" (click)="guardar()">Guardar venta</button>
+    <div class="operation-bottom sale-bottom">
+      <div></div>
+      <div class="operation-save-area">
+        <div class="total-box">TOTAL: {{ total() | number:'1.2-2' }}</div>
+        <button class="primary-btn blue-save" type="button" (click)="guardar()">Guardar venta</button>
+      </div>
     </div>
   </div>
 </section>

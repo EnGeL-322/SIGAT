@@ -14,7 +14,6 @@
   </div>
 
   <div class="report-tabs">
-    <a routerLink="/reportes/stock">Reporte de stock</a>
     <a routerLink="/reportes/ventas" class="active-report">Reporte de ventas</a>
     <a routerLink="/reportes/bajo-stock">Bajo stock</a>
   </div>
@@ -34,7 +33,7 @@
       <option value="TODOS">Todos</option>
       <option *ngFor="let producto of productos" [ngValue]="producto.id">{{ producto.nombre }}</option>
     </select>
-    <button class="icon green" (click)="filtrar()">OK</button>
+    <button class="icon green" type="button" (click)="filtrar()">OK</button>
   </div>
 
   <div class="table-shell">
@@ -47,6 +46,10 @@
       <span>IMEI</span>
       <span>Precio</span>
       <span>Acciones</span>
+    </div>
+
+    <div class="empty-state" *ngIf="loading">
+      Cargando reporte de ventas...
     </div>
 
     <div class="table-row grid-reporte-ventas" *ngFor="let fila of filtrados; let i = index">
@@ -63,7 +66,7 @@
       </span>
     </div>
 
-    <div class="empty-state" *ngIf="!filtrados.length">
+    <div class="empty-state" *ngIf="!loading && !filtrados.length">
       No hay ventas para los filtros seleccionados.
     </div>
   </div>

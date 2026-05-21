@@ -70,4 +70,13 @@ public class VentaController {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
         }
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ResponseDTO> eliminar(@PathVariable Long id) {
+        try {
+            ventaService.eliminar(id);
+            return ResponseEntity.ok(new ResponseDTO(true, "Venta eliminada", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
 }

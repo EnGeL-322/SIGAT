@@ -27,10 +27,13 @@
       <span>{{ item.total }}</span>
       <span>SIGAT</span>
       <span class="row-actions">
-        <button class="icon green" (click)="verDetalle(item)">&#128065;</button>
+        <button class="icon green" type="button" (click)="verDetalle(item)" aria-label="Ver detalle de venta">&#128065;</button>
+        <button class="icon red" type="button" (click)="remove(item.id)" aria-label="Eliminar venta">&#128465;</button>
       </span>
     </div>
   </div>
+
+  <p class="form-error" *ngIf="error">{{ error }}</p>
 
   <div class="modal-backdrop" *ngIf="detailModal">
     <div class="modal-card detail-card">

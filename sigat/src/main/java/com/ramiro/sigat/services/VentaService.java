@@ -1,27 +1,47 @@
 package com.ramiro.sigat.services;
-import com.ramiro.sigat.models.*;
-import com.ramiro.sigat.repositories.*;
-import com.ramiro.sigat.dto.*;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import com.ramiro.sigat.dto.DetalleVentaDTO;
+import com.ramiro.sigat.dto.VentaDTO;
+import com.ramiro.sigat.models.Cliente;
+import com.ramiro.sigat.models.DetalleVenta;
+import com.ramiro.sigat.models.IMEI;
+import com.ramiro.sigat.models.Producto;
+import com.ramiro.sigat.models.Venta;
+import com.ramiro.sigat.repositories.ClienteRepository;
+import com.ramiro.sigat.repositories.DetalleVentaRepository;
+import com.ramiro.sigat.repositories.IMEIRepository;
+import com.ramiro.sigat.repositories.ProductoRepository;
+import com.ramiro.sigat.repositories.VentaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
-import java.util.stream.Collectors;
+
 import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 public class VentaService {
-    @Autowired
-    private VentaRepository ventaRepository;
-    @Autowired
-    private DetalleVentaRepository detalleVentaRepository;
-    @Autowired
-    private ClienteRepository clienteRepository;
-    @Autowired
-    private ProductoRepository productoRepository;
-    @Autowired
-    private IMEIRepository imeiRepository;
-    @Autowired
-    private IMEIService imeiService;
+    private final VentaRepository ventaRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
+    private final ClienteRepository clienteRepository;
+    private final ProductoRepository productoRepository;
+    private final IMEIRepository imeiRepository;
+    private final IMEIService imeiService;
+
+    public VentaService(
+            VentaRepository ventaRepository,
+            DetalleVentaRepository detalleVentaRepository,
+            ClienteRepository clienteRepository,
+            ProductoRepository productoRepository,
+            IMEIRepository imeiRepository,
+            IMEIService imeiService
+    ) {
+        this.ventaRepository = ventaRepository;
+        this.detalleVentaRepository = detalleVentaRepository;
+        this.clienteRepository = clienteRepository;
+        this.productoRepository = productoRepository;
+        this.imeiRepository = imeiRepository;
+        this.imeiService = imeiService;
+    }
 
     @Transactional
     public VentaDTO crearVenta(VentaDTO dto, List<DetalleVentaDTO> detalles) {
@@ -31,19 +51,24 @@ public class VentaService {
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+
         Venta venta = new Venta();
         venta.setNumeroVenta(generarNumeroVenta());
         venta.setCliente(cliente);
         venta.setEstado(Venta.EstadoVenta.COMPLETADA);
         venta.setTotal(0.0);
         venta = ventaRepository.save(venta);
-        Double total = 0.0;
+
+        double total = 0.0;
+
         for (DetalleVentaDTO detalleDto : detalles) {
             validarDetalle(detalleDto);
+
             Producto producto = productoRepository.findById(detalleDto.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
             List<IMEI> imeis = obtenerImeisParaVenta(detalleDto, producto);
+
             for (IMEI imei : imeis) {
                 DetalleVenta detalle = new DetalleVenta();
                 detalle.setVenta(venta);
@@ -52,6 +77,7 @@ public class VentaService {
                 detalle.setPrecioUnitario(detalleDto.getPrecioUnitario());
                 detalle.calcularSubtotal();
                 detalleVentaRepository.save(detalle);
+
                 total += detalle.getSubtotal();
 
                 imei.setVenta(venta);
@@ -65,34 +91,67 @@ public class VentaService {
             producto.setStockActual(producto.getStockActual() - imeis.size());
             productoRepository.save(producto);
         }
+
         venta.setTotal(total);
-        venta = ventaRepository.save(venta);
-        return convertirADTO(venta);
+        return convertirADTO(ventaRepository.save(venta));
     }
+
+    @Transactional(readOnly = true)
     public VentaDTO obtenerPorId(Long id) {
         Venta venta = ventaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
         return convertirADTO(venta);
     }
+
+    @Transactional(readOnly = true)
     public List<VentaDTO> listarTodas() {
         return ventaRepository.findAll().stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<VentaDTO> listarPorCliente(Long clienteId) {
         return ventaRepository.findByClienteId(clienteId).stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<DetalleVentaDTO> obtenerDetalles(Long ventaId) {
         return detalleVentaRepository.findByVentaId(ventaId).stream()
                 .map(this::convertirDetalleADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional
+    public void eliminar(Long ventaId) {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+        List<DetalleVenta> detalles = detalleVentaRepository.findByVentaId(ventaId);
+
+        for (DetalleVenta detalle : detalles) {
+            Producto producto = detalle.getProducto();
+            producto.setStockActual((producto.getStockActual() == null ? 0 : producto.getStockActual()) + 1);
+            productoRepository.save(producto);
+
+            IMEI imei = detalle.getImei();
+            imei.setEstado(IMEI.EstadoIMEI.EN_STOCK);
+            imei.setVenta(null);
+            imei.setDetalleVenta(null);
+            imei.setClienteId(null);
+            imei.setFechaVenta(null);
+            imeiRepository.save(imei);
+        }
+
+        detalleVentaRepository.deleteAll(detalles);
+        ventaRepository.delete(venta);
+    }
+
     private String generarNumeroVenta() {
-        Long ultimaVenta = ventaRepository.count();
-        return "VTA-" + (ultimaVenta + 1);
+        return "VTA-" + (ventaRepository.count() + 1);
     }
+
     private void validarDetalle(DetalleVentaDTO detalleDto) {
         if (detalleDto.getProductoId() == null) {
             throw new RuntimeException("Debe seleccionar un producto");
@@ -118,10 +177,11 @@ public class VentaService {
         }
 
         imeiService.listarPorProducto(producto.getId());
-        List<IMEI> disponibles = imeiRepository.findByProductoId(producto.getId()).stream()
-                .filter(imei -> imei.getEstado() == IMEI.EstadoIMEI.EN_STOCK)
+        List<IMEI> disponibles = imeiRepository
+                .findByProductoIdAndEstado(producto.getId(), IMEI.EstadoIMEI.EN_STOCK)
+                .stream()
                 .limit(detalleDto.getCantidad())
-                .collect(Collectors.toList());
+                .toList();
 
         if (disponibles.size() < detalleDto.getCantidad()) {
             throw new RuntimeException("Stock insuficiente para " + producto.getNombre() + ". Disponible: " + disponibles.size());
@@ -141,6 +201,7 @@ public class VentaService {
                 .fechaVenta(venta.getFechaVenta())
                 .build();
     }
+
     private DetalleVentaDTO convertirDetalleADTO(DetalleVenta detalle) {
         return DetalleVentaDTO.builder()
                 .id(detalle.getId())

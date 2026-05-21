@@ -37,6 +37,8 @@
     </div>
   </div>
 
+  <p class="form-error" *ngIf="error">{{ error }}</p>
+
   <div class="modal-backdrop" *ngIf="showModal">
     <div class="modal-card">
       <h3>{{ editId ? 'Editar cliente' : 'Agregar cliente' }}</h3>

@@ -1,15 +1,22 @@
 package com.ramiro.sigat.services;
-import com.ramiro.sigat.models.*;
-import com.ramiro.sigat.repositories.*;
-import com.ramiro.sigat.dto.*;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import com.ramiro.sigat.dto.ProductoDTO;
+import com.ramiro.sigat.models.Producto;
+import com.ramiro.sigat.repositories.ProductoRepository;
 import org.springframework.stereotype.Service;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
 @Service
 public class ProductoService {
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+
+    public ProductoService(ProductoRepository productoRepository) {
+        this.productoRepository = productoRepository;
+    }
+
+    @Transactional
     public ProductoDTO crearProducto(ProductoDTO dto) {
         Producto producto = new Producto();
         producto.setNombre(dto.getNombre());
@@ -20,29 +27,38 @@ public class ProductoService {
         producto.setPrecio(dto.getPrecio());
         producto.setStockMinimo(dto.getStockMinimo());
         producto.setActivo(true);
-        producto = productoRepository.save(producto);
-        return convertirADTO(producto);
+        return convertirADTO(productoRepository.save(producto));
     }
+
+    @Transactional(readOnly = true)
     public ProductoDTO obtenerPorId(Long id) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         return convertirADTO(producto);
     }
+
+    @Transactional(readOnly = true)
     public List<ProductoDTO> listarTodos() {
         return productoRepository.findAll().stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<ProductoDTO> listarActivos() {
         return productoRepository.findByActivo(true).stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<ProductoDTO> listarBajoStock() {
         return productoRepository.findByStockActualLessThan(10).stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional
     public ProductoDTO actualizar(Long id, ProductoDTO dto) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -53,21 +69,25 @@ public class ProductoService {
         producto.setModelo(dto.getModelo());
         producto.setPrecio(dto.getPrecio());
         producto.setStockMinimo(dto.getStockMinimo());
-        producto = productoRepository.save(producto);
-        return convertirADTO(producto);
+        return convertirADTO(productoRepository.save(producto));
     }
+
+    @Transactional
     public void eliminar(Long id) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         producto.setActivo(false);
         productoRepository.save(producto);
     }
+
+    @Transactional
     public void actualizarStock(Long id, Integer cantidad) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         producto.setStockActual(producto.getStockActual() + cantidad);
         productoRepository.save(producto);
     }
+
     private ProductoDTO convertirADTO(Producto producto) {
         return ProductoDTO.builder()
                 .id(producto.getId())

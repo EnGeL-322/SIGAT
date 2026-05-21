@@ -14,9 +14,14 @@ import { ApiService } from '../../../../core/api.service';
 export class UsuariosListComponent implements OnInit {
   usuarios: any[] = [];
   filtrados: any[] = [];
+  roles: any[] = [
+    { id: 1, nombre: 'ADMIN' },
+    { id: 2, nombre: 'TRABAJADOR' }
+  ];
   search = '';
   showModal = false;
   editId: number | null = null;
+  error = '';
   form: FormGroup;
 
   constructor(private api: ApiService, private fb: FormBuilder, private cdr: ChangeDetectorRef) {
@@ -25,17 +30,34 @@ export class UsuariosListComponent implements OnInit {
       apellido: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
-      rolId: [1, Validators.required]
+      rolId: [1, [Validators.required, Validators.min(1)]]
     });
   }
 
   ngOnInit(): void {
+    this.loadRoles();
     this.load();
+  }
+
+  loadRoles(): void {
+    this.api.obtenerRoles().subscribe({
+      next: (res: any) => {
+        const roles = res?.datos || [];
+        if (roles.length) {
+          this.roles = this.prepareRoles(roles);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => this.cdr.detectChanges()
+    });
   }
 
   load(): void {
     this.api.obtenerUsuarios().subscribe((res: any) => {
-      this.usuarios = res?.datos || [];
+      this.usuarios = (res?.datos || []).map((usuario: any) => ({
+        ...usuario,
+        rolNombre: this.displayRole(usuario.rolNombre)
+      }));
       this.filtrar();
       this.cdr.detectChanges();
     });
@@ -50,18 +72,22 @@ export class UsuariosListComponent implements OnInit {
 
   openCreate(): void {
     this.editId = null;
+    this.form.get('password')?.setValidators([Validators.required]);
+    this.form.get('password')?.updateValueAndValidity();
     this.form.reset({
       nombre: '',
       apellido: '',
       email: '',
       password: '',
-      rolId: 1
+      rolId: this.roles[0]?.id || 1
     });
     this.showModal = true;
   }
 
   openEdit(user: any): void {
     this.editId = user.id;
+    this.form.get('password')?.clearValidators();
+    this.form.get('password')?.updateValueAndValidity();
     this.form.patchValue({
       nombre: user.nombre,
       apellido: user.apellido,
@@ -76,6 +102,11 @@ export class UsuariosListComponent implements OnInit {
     if (this.form.invalid) return;
 
     const payload = this.form.getRawValue();
+    payload.password = payload.password?.trim();
+
+    if (this.editId && !payload.password) {
+      delete payload.password;
+    }
 
     if (this.editId) {
       this.api.actualizarUsuario(this.editId, payload).subscribe(() => {
@@ -91,6 +122,47 @@ export class UsuariosListComponent implements OnInit {
   }
 
   remove(id: number): void {
-    this.api.eliminarUsuario(id).subscribe(() => this.load());
+    if (!confirm('Eliminar este usuario lo desactivara del sistema. Deseas continuar?')) return;
+
+    this.error = '';
+    this.api.eliminarUsuario(id).subscribe({
+      next: () => this.load(),
+      error: (err) => {
+        this.error = this.extractError(err, 'No se pudo eliminar el usuario');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  displayRole(role: string | null | undefined): string {
+    const normalized = this.normalizeRole(role);
+    if (normalized.includes('ADMIN')) return 'ADMIN';
+    return 'TRABAJADOR';
+  }
+
+  private prepareRoles(roles: any[]): any[] {
+    const unique = new Map<string, any>();
+    roles.forEach((rol) => {
+      const nombre = this.displayRole(rol.nombre);
+      unique.set(nombre, { ...rol, nombre });
+    });
+
+    return Array.from(unique.values()).sort((a, b) => {
+      if (a.nombre === 'ADMIN') return -1;
+      if (b.nombre === 'ADMIN') return 1;
+      return a.nombre.localeCompare(b.nombre);
+    });
+  }
+
+  private normalizeRole(role: string | null | undefined): string {
+    return (role || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .trim();
+  }
+
+  private extractError(err: any, fallback: string): string {
+    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

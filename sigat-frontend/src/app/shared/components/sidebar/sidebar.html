@@ -70,7 +70,7 @@
       </a>
     </div>
 
-    <div class="menu-group">
+    <div class="menu-group" *ngIf="isAdmin">
       <div class="menu-heading">
         <span class="menu-index">05</span>
         <img class="menu-heading-icon" src="assets/icons/icon-seguridad.png" alt="">
@@ -82,4 +82,10 @@
       </a>
     </div>
   </nav>
+
+  <div class="logout-area">
+    <button type="button" class="logout-btn" (click)="logout()">
+      Cerrar sesion
+    </button>
+  </div>
 </aside>

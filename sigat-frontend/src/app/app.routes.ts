@@ -14,6 +14,8 @@ import { VentasFormComponent } from './shared/features/ventas/ventas-form/ventas
 import { UsuariosListComponent } from './shared/features/usuarios/usuarios-list/usuarios-list';
 import { ReporteVentasComponent } from './shared/features/reportes/reporte-ventas/reporte-ventas';
 import { ReporteBajoStockComponent } from './shared/features/reportes/reporte-bajo-stock/reporte-bajo-stock';
+import { adminGuard } from './core/admin.guard';
+import { authChildGuard, authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -24,6 +26,8 @@ export const routes: Routes = [
   {
     path: '',
     component: DashboardLayoutComponent,
+    canActivate: [authGuard],
+    canActivateChild: [authChildGuard],
     children: [
       { path: 'dashboard', component: DashboardHomeComponent },
       { path: 'productos', component: ProductosListComponent },
@@ -38,7 +42,7 @@ export const routes: Routes = [
       { path: 'reportes/stock', redirectTo: 'reportes/ventas', pathMatch: 'full' },
       { path: 'reportes/ventas', component: ReporteVentasComponent },
       { path: 'reportes/bajo-stock', component: ReporteBajoStockComponent },
-      { path: 'usuarios', component: UsuariosListComponent }
+      { path: 'usuarios', component: UsuariosListComponent, canActivate: [adminGuard] }
     ]
   },
 

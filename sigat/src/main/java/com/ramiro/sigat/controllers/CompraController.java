@@ -70,4 +70,13 @@ public class CompraController {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
         }
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ResponseDTO> eliminar(@PathVariable Long id) {
+        try {
+            compraService.eliminar(id);
+            return ResponseEntity.ok(new ResponseDTO(true, "Compra eliminada", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
 }

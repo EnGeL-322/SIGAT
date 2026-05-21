@@ -1,19 +1,27 @@
 package com.ramiro.sigat.services;
-import com.ramiro.sigat.models.*;
-import com.ramiro.sigat.repositories.*;
-import com.ramiro.sigat.dto.*;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import com.ramiro.sigat.dto.ClienteDTO;
+import com.ramiro.sigat.models.Cliente;
+import com.ramiro.sigat.repositories.ClienteRepository;
 import org.springframework.stereotype.Service;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
 @Service
 public class ClienteService {
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
+
+    public ClienteService(ClienteRepository clienteRepository) {
+        this.clienteRepository = clienteRepository;
+    }
+
+    @Transactional
     public ClienteDTO crearCliente(ClienteDTO dto) {
         if (clienteRepository.findByCedula(dto.getCedula()).isPresent()) {
-            throw new RuntimeException("Cliente con esta cédula ya existe");
+            throw new RuntimeException("Cliente con esta cedula ya existe");
         }
+
         Cliente cliente = new Cliente();
         cliente.setNombre(dto.getNombre());
         cliente.setApellido(dto.getApellido());
@@ -22,24 +30,31 @@ public class ClienteService {
         cliente.setTelefono(dto.getTelefono());
         cliente.setDireccion(dto.getDireccion());
         cliente.setActivo(true);
-        cliente = clienteRepository.save(cliente);
-        return convertirADTO(cliente);
+        return convertirADTO(clienteRepository.save(cliente));
     }
+
+    @Transactional(readOnly = true)
     public ClienteDTO obtenerPorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
         return convertirADTO(cliente);
     }
+
+    @Transactional(readOnly = true)
     public List<ClienteDTO> listarTodos() {
         return clienteRepository.findAll().stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<ClienteDTO> listarActivos() {
         return clienteRepository.findByActivo(true).stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional
     public ClienteDTO actualizar(Long id, ClienteDTO dto) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
@@ -48,15 +63,17 @@ public class ClienteService {
         cliente.setEmail(dto.getEmail());
         cliente.setTelefono(dto.getTelefono());
         cliente.setDireccion(dto.getDireccion());
-        cliente = clienteRepository.save(cliente);
-        return convertirADTO(cliente);
+        return convertirADTO(clienteRepository.save(cliente));
     }
+
+    @Transactional
     public void eliminar(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
         cliente.setActivo(false);
         clienteRepository.save(cliente);
     }
+
     private ClienteDTO convertirADTO(Cliente cliente) {
         return ClienteDTO.builder()
                 .id(cliente.getId())

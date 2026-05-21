@@ -19,6 +19,7 @@ export class ClientesListComponent implements OnInit {
   detailModal = false;
   selected: any = null;
   editId: number | null = null;
+  error = '';
   form: FormGroup;
 
   constructor(private api: ApiService, private fb: FormBuilder, private cdr: ChangeDetectorRef) {
@@ -94,6 +95,19 @@ export class ClientesListComponent implements OnInit {
   }
 
   remove(id: number): void {
-    this.api.eliminarCliente(id).subscribe(() => this.load());
+    if (!confirm('Eliminar este cliente lo ocultara de las listas activas. Deseas continuar?')) return;
+
+    this.error = '';
+    this.api.eliminarCliente(id).subscribe({
+      next: () => this.load(),
+      error: (err) => {
+        this.error = this.extractError(err, 'No se pudo eliminar el cliente');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private extractError(err: any, fallback: string): string {
+    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

@@ -46,6 +46,15 @@ a {
   color: inherit;
 }
 
+img[src$="logo-sigat.png"] {
+  opacity: 0.58;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+img[src$="logo-sigat.png"]:hover {
+  opacity: 0.86;
+}
+
 .module-page {
   width: 100%;
   max-width: var(--page-max);
@@ -243,11 +252,11 @@ a {
 }
 
 .grid-compras {
-  grid-template-columns: 54px 1fr 1.2fr 120px 140px 170px;
+  grid-template-columns: 54px 1fr 1.2fr 120px 140px 170px 130px;
 }
 
 .grid-ventas {
-  grid-template-columns: 54px 1.3fr 1fr 120px 1fr 120px;
+  grid-template-columns: 54px 1.3fr 1fr 120px 1fr 140px;
 }
 
 .grid-usuarios {
@@ -455,6 +464,12 @@ a {
   align-items: center;
 }
 
+.purchase-detail-item {
+  grid-template-columns: 44px 1.4fr 0.7fr 0.9fr 0.8fr;
+  align-items: center;
+}
+
+.purchase-detail-item small,
 .sale-detail-item small {
   display: block;
   margin-bottom: 6px;
@@ -465,6 +480,7 @@ a {
   font-weight: 800;
 }
 
+.purchase-detail-item span,
 .sale-detail-item span {
   color: #233153;
   font-size: 16px;
@@ -651,6 +667,51 @@ a {
   text-align: center;
   color: rgba(39, 49, 76, 0.72);
   font-weight: 700;
+}
+
+.report-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 8px 2px;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  color: rgba(39, 49, 76, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination-controls button {
+  min-width: 38px;
+  min-height: 34px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #233153;
+  font-weight: 800;
+  box-shadow: 0 8px 14px rgba(36, 55, 101, 0.1);
+}
+
+.pagination-controls button.active-page {
+  background: linear-gradient(180deg, #7d82ef 0%, #5d66e8 100%);
+  color: #ffffff;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .form-error {
@@ -976,6 +1037,8 @@ a {
   .sale-detail-area,
   .sale-detail-editor,
   .sale-detail-row,
+  .sale-detail-item,
+  .purchase-detail-item,
   .operation-bottom {
     grid-template-columns: 1fr;
   }

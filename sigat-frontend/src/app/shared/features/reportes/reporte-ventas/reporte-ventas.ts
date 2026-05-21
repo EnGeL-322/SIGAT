@@ -24,6 +24,8 @@ export class ReporteVentasComponent implements OnInit {
   detailModal = false;
   loading = false;
   error = '';
+  itemsPorPagina = 10;
+  paginaActual = 1;
 
   fecha = '';
   clienteId: number | 'TODOS' = 'TODOS';
@@ -53,6 +55,7 @@ export class ReporteVentasComponent implements OnInit {
       const coincideProducto = this.productoId === 'TODOS' || fila.productoId === this.productoId;
       return coincidePeriodo && coincideCliente && coincideProducto;
     });
+    this.paginaActual = 1;
   }
 
   cambiarPeriodo(periodo: PeriodoReporte): void {
@@ -70,6 +73,33 @@ export class ReporteVentasComponent implements OnInit {
 
   numeroVentas(): number {
     return new Set(this.filtrados.map(fila => fila.ventaId)).size;
+  }
+
+  get filasPaginadas(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filtrados.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.filtrados.length / this.itemsPorPagina));
+  }
+
+  get paginas(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, index) => index + 1);
+  }
+
+  get inicioPagina(): number {
+    if (!this.filtrados.length) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get finPagina(): number {
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.filtrados.length);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) return;
+    this.paginaActual = pagina;
   }
 
   verDetalle(fila: any): void {

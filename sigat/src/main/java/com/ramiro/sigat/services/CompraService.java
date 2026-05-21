@@ -1,26 +1,50 @@
 package com.ramiro.sigat.services;
 
-import com.ramiro.sigat.models.*;
-import com.ramiro.sigat.repositories.*;
-import com.ramiro.sigat.dto.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ramiro.sigat.dto.CompraDTO;
+import com.ramiro.sigat.dto.DetalleCompraDTO;
+import com.ramiro.sigat.dto.IMEIDTO;
+import com.ramiro.sigat.models.Cliente;
+import com.ramiro.sigat.models.Compra;
+import com.ramiro.sigat.models.DetalleCompra;
+import com.ramiro.sigat.models.IMEI;
+import com.ramiro.sigat.models.Producto;
+import com.ramiro.sigat.models.Proveedor;
+import com.ramiro.sigat.models.Venta;
+import com.ramiro.sigat.repositories.CompraRepository;
+import com.ramiro.sigat.repositories.DetalleCompraRepository;
+import com.ramiro.sigat.repositories.IMEIRepository;
+import com.ramiro.sigat.repositories.ProductoRepository;
+import com.ramiro.sigat.repositories.ProveedorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
+
 @Service
 public class CompraService {
-    @Autowired
-    private CompraRepository compraRepository;
-    @Autowired
-    private DetalleCompraRepository detalleCompraRepository;
-    @Autowired
-    private ProveedorRepository proveedorRepository;
-    @Autowired
-    private ProductoRepository productoRepository;
-    @Autowired
-    private IMEIRepository imeiRepository;
+    private final CompraRepository compraRepository;
+    private final DetalleCompraRepository detalleCompraRepository;
+    private final ProveedorRepository proveedorRepository;
+    private final ProductoRepository productoRepository;
+    private final IMEIRepository imeiRepository;
+
+    public CompraService(
+            CompraRepository compraRepository,
+            DetalleCompraRepository detalleCompraRepository,
+            ProveedorRepository proveedorRepository,
+            ProductoRepository productoRepository,
+            IMEIRepository imeiRepository
+    ) {
+        this.compraRepository = compraRepository;
+        this.detalleCompraRepository = detalleCompraRepository;
+        this.proveedorRepository = proveedorRepository;
+        this.productoRepository = productoRepository;
+        this.imeiRepository = imeiRepository;
+    }
 
     @Transactional
     public CompraDTO crearCompra(CompraDTO dto, List<DetalleCompraDTO> detalles) {
@@ -30,28 +54,34 @@ public class CompraService {
 
         Proveedor proveedor = proveedorRepository.findById(dto.getProveedorId())
                 .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+
         Compra compra = new Compra();
         compra.setNumeroCompra(generarNumeroCompra());
         compra.setProveedor(proveedor);
         compra.setEstado(Compra.EstadoCompra.PENDIENTE);
         compra.setTotal(0.0);
         compra = compraRepository.save(compra);
-        Double total = 0.0;
+
+        double total = 0.0;
         Set<String> imeisCompra = new HashSet<>();
+
         for (DetalleCompraDTO detalleDto : detalles) {
-            DetalleCompra detalle = new DetalleCompra();
-            detalle.setCompra(compra);
+            validarDetalle(detalleDto);
+
             Producto producto = productoRepository.findById(detalleDto.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-            validarDetalle(detalleDto);
-            List<String> imeis = generarImeis(detalleDto.getCantidad(), imeisCompra);
+
+            DetalleCompra detalle = new DetalleCompra();
+            detalle.setCompra(compra);
             detalle.setProducto(producto);
             detalle.setCantidad(detalleDto.getCantidad());
             detalle.setPrecioUnitario(detalleDto.getPrecioUnitario());
             detalle.calcularSubtotal();
             detalleCompraRepository.save(detalle);
+
             total += detalle.getSubtotal();
-            for (String numeroImei : imeis) {
+
+            for (String numeroImei : generarImeis(detalleDto.getCantidad(), imeisCompra)) {
                 IMEI imei = new IMEI();
                 imei.setNumero(numeroImei);
                 imei.setProducto(producto);
@@ -60,41 +90,78 @@ public class CompraService {
                 imei.setEstado(IMEI.EstadoIMEI.EN_STOCK);
                 imeiRepository.save(imei);
             }
-            // Actualizar stock del producto
+
             producto.setStockActual(producto.getStockActual() + detalleDto.getCantidad());
             productoRepository.save(producto);
         }
+
         compra.setTotal(total);
         compra.setEstado(Compra.EstadoCompra.RECIBIDA);
-        compra = compraRepository.save(compra);
-        return convertirADTO(compra);
+        return convertirADTO(compraRepository.save(compra));
     }
+
+    @Transactional(readOnly = true)
     public CompraDTO obtenerPorId(Long id) {
         Compra compra = compraRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Compra no encontrada"));
         return convertirADTO(compra);
     }
+
+    @Transactional(readOnly = true)
     public List<CompraDTO> listarTodas() {
         return compraRepository.findAll().stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional(readOnly = true)
     public List<CompraDTO> listarPorProveedor(Long proveedorId) {
         return compraRepository.findByProveedorId(proveedorId).stream()
                 .map(this::convertirADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<DetalleCompraDTO> obtenerDetalles(Long compraId) {
         return detalleCompraRepository.findByCompraId(compraId).stream()
                 .map(this::convertirDetalleADTO)
-                .collect(Collectors.toList());
+                .toList();
     }
+
+    @Transactional
+    public void eliminar(Long compraId) {
+        Compra compra = compraRepository.findById(compraId)
+                .orElseThrow(() -> new RuntimeException("Compra no encontrada"));
+        List<IMEI> imeis = imeiRepository.findByCompraId(compraId);
+
+        boolean tieneImeisVendidos = imeis.stream()
+                .anyMatch(imei -> imei.getEstado() == IMEI.EstadoIMEI.VENDIDO);
+        if (tieneImeisVendidos) {
+            throw new RuntimeException("No se puede eliminar la compra porque tiene IMEI vendidos");
+        }
+
+        List<DetalleCompra> detalles = detalleCompraRepository.findByCompraId(compraId);
+        for (DetalleCompra detalle : detalles) {
+            Producto producto = detalle.getProducto();
+            int stockActual = producto.getStockActual() == null ? 0 : producto.getStockActual();
+            producto.setStockActual(Math.max(0, stockActual - detalle.getCantidad()));
+            productoRepository.save(producto);
+        }
+
+        imeiRepository.deleteAll(imeis);
+        detalleCompraRepository.deleteAll(detalles);
+        compraRepository.delete(compra);
+    }
+
     private String generarNumeroCompra() {
-        Long ultimaCompra = compraRepository.count();
-        return "CMP-" + (ultimaCompra + 1);
+        return "CMP-" + (compraRepository.count() + 1);
     }
+
     private void validarDetalle(DetalleCompraDTO detalleDto) {
+        if (detalleDto.getProductoId() == null) {
+            throw new RuntimeException("Debe seleccionar un producto");
+        }
+
         if (detalleDto.getCantidad() == null || detalleDto.getCantidad() <= 0) {
             throw new RuntimeException("La cantidad debe ser mayor a cero");
         }
@@ -122,6 +189,7 @@ public class CompraService {
         } while (imeiRepository.findByNumero(imei).isPresent());
         return imei;
     }
+
     private DetalleCompraDTO convertirDetalleADTO(DetalleCompra detalle) {
         return DetalleCompraDTO.builder()
                 .id(detalle.getId())
@@ -133,7 +201,7 @@ public class CompraService {
                 .subtotal(detalle.getSubtotal())
                 .imeis(imeiRepository.findByDetalleCompraId(detalle.getId()).stream()
                         .map(this::convertirImeiADTO)
-                        .collect(Collectors.toList()))
+                        .toList())
                 .build();
     }
 

@@ -18,6 +18,7 @@
       <span>Total</span>
       <span>Estado</span>
       <span>Fecha</span>
+      <span>Acciones</span>
     </div>
 
     <div class="table-row grid-compras" *ngFor="let item of compras">
@@ -27,6 +28,48 @@
       <span>{{ item.total }}</span>
       <span>{{ item.estado }}</span>
       <span>{{ item.fechaCompra | date:'short' }}</span>
+      <span class="row-actions">
+        <button class="icon green" type="button" (click)="verDetalle(item)" aria-label="Ver detalle de compra">&#128065;</button>
+        <button class="icon red" type="button" (click)="remove(item.id)" aria-label="Eliminar compra">&#128465;</button>
+      </span>
+    </div>
+  </div>
+
+  <p class="form-error" *ngIf="error">{{ error }}</p>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle de compra</h3>
+      <p><strong>Numero de compra</strong> <span>{{ selected?.numeroCompra }}</span></p>
+      <p><strong>Proveedor</strong> <span>{{ selected?.proveedorNombre }}</span></p>
+      <p><strong>Total comprado</strong> <span>S/ {{ selected?.total }}</span></p>
+      <p><strong>Fecha</strong> <span>{{ selected?.fechaCompra | date:'short' }}</span></p>
+
+      <h3 class="detail-subtitle">Equipos ingresados en esta compra</h3>
+      <div class="mini-list">
+        <div class="mini-item purchase-detail-item" *ngFor="let d of detalles; let i = index">
+          <div class="detail-line-number">{{ i + 1 }}</div>
+          <div>
+            <small>Producto comprado</small>
+            <span>{{ d.productoNombre }}</span>
+          </div>
+          <div>
+            <small>Cantidad</small>
+            <span>{{ d.cantidad }}</span>
+          </div>
+          <div>
+            <small>Precio unitario</small>
+            <span>S/ {{ d.precioUnitario }}</span>
+          </div>
+          <div>
+            <small>IMEI generados</small>
+            <span>{{ d.imeis?.length || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary-btn" type="button" (click)="detailModal = false">Cerrar</button>
     </div>
   </div>
 </section>

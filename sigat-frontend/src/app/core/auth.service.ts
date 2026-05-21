@@ -48,6 +48,26 @@ export class AuthService {
     return this.userSubject.value;
   }
 
+  getRole(): string {
+    return this.normalizeRole(this.getUser()?.rol);
+  }
+
+  isAdmin(): boolean {
+    return this.getRole().includes('ADMIN');
+  }
+
+  isTrabajador(): boolean {
+    return !this.isAdmin();
+  }
+
+  private normalizeRole(role: string | null | undefined): string {
+    return (role || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .trim();
+  }
+
   private getStoredUser(): any {
     const raw = localStorage.getItem(this.userKey);
     return raw ? JSON.parse(raw) : null;

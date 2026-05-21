@@ -15,6 +15,8 @@ import java.util.List;
 public class AuthController {
     @Autowired
     private UsuarioService usuarioService;
+    @Autowired
+    private RolService rolService;
     @PostMapping("/login")
     public ResponseEntity<ResponseDTO> login(@RequestBody LoginRequestDTO request) {
         try {
@@ -28,7 +30,7 @@ public class AuthController {
                     .usuarioId(usuario.getId())
                     .nombre(usuario.getNombre())
                     .email(usuario.getEmail())
-                    .rol(usuario.getRol().getNombre())
+                    .rol(rolService.normalizarNombreRol(usuario.getRol().getNombre()))
                     .build();
             return ResponseEntity.ok(new ResponseDTO(true, "Login exitoso", response));
         } catch (Exception e) {

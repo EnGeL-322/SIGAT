@@ -19,6 +19,7 @@ export class ProductosListComponent implements OnInit {
   detailModal = false;
   selected: any = null;
   editId: number | null = null;
+  error = '';
   form: FormGroup;
 
   constructor(private api: ApiService, private fb: FormBuilder, private cdr: ChangeDetectorRef) {
@@ -53,6 +54,7 @@ export class ProductosListComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.error = '';
     this.editId = null;
     this.selected = null;
     this.form.reset({
@@ -68,6 +70,7 @@ export class ProductosListComponent implements OnInit {
   }
 
   openEdit(item: any): void {
+    this.error = '';
     this.editId = item.id;
     this.selected = item;
     this.form.patchValue({
@@ -90,23 +93,45 @@ export class ProductosListComponent implements OnInit {
   save(): void {
     if (this.form.invalid) return;
 
+    this.error = '';
     const payload = this.form.getRawValue();
 
     if (this.editId) {
-      this.api.actualizarProducto(this.editId, payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.actualizarProducto(this.editId, payload).subscribe({
+        next: () => {
+          this.showModal = false;
+          this.load();
+        },
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo actualizar el producto');
+          this.cdr.detectChanges();
+        }
       });
     } else {
-      this.api.crearProducto(payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.crearProducto(payload).subscribe({
+        next: () => {
+          this.showModal = false;
+          this.load();
+        },
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo crear el producto');
+          this.cdr.detectChanges();
+        }
       });
     }
   }
 
   remove(id: number): void {
-    this.api.eliminarProducto(id).subscribe(() => this.load());
+    if (!confirm('Eliminar este producto lo ocultara de las listas activas. Deseas continuar?')) return;
+
+    this.error = '';
+    this.api.eliminarProducto(id).subscribe({
+      next: () => this.load(),
+      error: (err) => {
+        this.error = this.extractError(err, 'No se pudo eliminar el producto');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   estadoStock(stock: number): string {
@@ -119,5 +144,9 @@ export class ProductosListComponent implements OnInit {
     if (stock <= 0) return 'danger';
     if (stock <= 5) return 'warning';
     return 'success';
+  }
+
+  private extractError(err: any, fallback: string): string {
+    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

@@ -94,6 +94,14 @@ export class ApiService {
     return this.refreshAfter(this.http.post(`${this.apiUrl}/compras`, payload));
   }
 
+  obtenerDetallesCompra(compraId: number): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/compras/${compraId}/detalles`));
+  }
+
+  eliminarCompra(id: number): Observable<any> {
+    return this.refreshAfter(this.http.delete(`${this.apiUrl}/compras/${id}`));
+  }
+
   obtenerVentas(): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/ventas`));
   }
@@ -108,6 +116,10 @@ export class ApiService {
 
   crearVenta(payload: any): Observable<any> {
     return this.refreshAfter(this.http.post(`${this.apiUrl}/ventas`, payload));
+  }
+
+  eliminarVenta(id: number): Observable<any> {
+    return this.refreshAfter(this.http.delete(`${this.apiUrl}/ventas/${id}`));
   }
 
   obtenerIMEIEnStock(): Observable<any> {
@@ -138,6 +150,10 @@ export class ApiService {
     return this.refreshAfter(this.http.delete(`${this.apiUrl}/usuarios/${id}`));
   }
 
+  obtenerRoles(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/roles`));
+  }
+
   private refreshAfter<T>(request$: Observable<T>): Observable<T> {
     return new Observable<T>((subscriber) => {
       const subscription = request$.subscribe({
@@ -157,6 +173,6 @@ export class ApiService {
   }
 
   private refreshView(): void {
-    queueMicrotask(() => this.appRef.tick());
+    setTimeout(() => this.appRef.tick(), 0);
   }
 }

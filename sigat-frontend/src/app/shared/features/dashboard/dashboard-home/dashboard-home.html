@@ -1,12 +1,31 @@
 <section class="dash-home">
-  <div class="hero-panel">
+  <div class="role-ribbon" [class.worker]="!isAdmin">
+    {{ roleLabel }}
+  </div>
+
+  <div class="hero-panel" [class.worker-panel]="!isAdmin">
     <div class="hero-copy">
-      <span class="hero-kicker">Vista principal</span>
-      <h2>Panel SIGAT</h2>
-      <p>Controla compras, ventas, maestros e inventario desde una sola vista.</p>
+      <span class="hero-kicker">{{ isAdmin ? 'Administracion general' : 'Operacion diaria' }}</span>
+      <h2>{{ isAdmin ? 'Panel SIGAT Admin' : 'Panel SIGAT Trabajador' }}</h2>
+      <p *ngIf="isAdmin">
+        Hola {{ userName }}. Controla compras, ventas, maestros, inventario, reportes y seguridad desde una sola vista.
+      </p>
+      <p *ngIf="!isAdmin">
+        Hola {{ userName }}. Accede a operaciones, maestros, inventario y reportes sin herramientas de seguridad.
+      </p>
     </div>
 
-    <div class="hero-stats">
+    <div class="dashboard-role-note" *ngIf="isAdmin">
+      <strong>Permisos admin</strong>
+      <span>Incluye gestion de usuarios y roles.</span>
+    </div>
+
+    <div class="dashboard-role-note worker-note" *ngIf="!isAdmin">
+      <strong>Permisos trabajador</strong>
+      <span>Seguridad, usuarios y roles quedan ocultos.</span>
+    </div>
+
+    <div class="hero-stats" *ngIf="isAdmin">
       <article class="hero-stat">
         <span>Productos</span>
         <strong>{{ productos }}</strong>
@@ -24,6 +43,28 @@
 
       <article class="hero-stat">
         <span>Ventas</span>
+        <strong>{{ ventas }}</strong>
+      </article>
+    </div>
+
+    <div class="hero-stats worker-stats" *ngIf="!isAdmin">
+      <article class="hero-stat">
+        <span>Compras y ventas</span>
+        <strong>{{ ventas }}</strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>Inventario</span>
+        <strong>{{ productos }}</strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>Clientes</span>
+        <strong>{{ clientes }}</strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>Reportes</span>
         <strong>{{ ventas }}</strong>
       </article>
     </div>

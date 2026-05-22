@@ -51,6 +51,7 @@
         <input formControlName="telefono" placeholder="Telefono">
         <input formControlName="email" placeholder="Correo">
         <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+        <p class="form-error" *ngIf="error">{{ error }}</p>
 
         <div class="modal-actions">
           <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>

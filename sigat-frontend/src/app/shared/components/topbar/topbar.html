@@ -18,8 +18,35 @@
   </button>
 
   <div class="topbar-center">
-    <input type="text" placeholder="Buscador">
-    <span class="search-icon" aria-hidden="true"></span>
+    <input
+      type="text"
+      placeholder="Buscar modulo del menu"
+      autocomplete="off"
+      [(ngModel)]="searchTerm"
+      (focus)="searchFocused = true"
+      (blur)="closeSearchLater()"
+      (keydown.enter)="searchMenu()"
+      aria-label="Buscar modulo del menu lateral"
+    >
+    <button class="search-action" type="button" (click)="searchMenu()" aria-label="Buscar modulo">
+      <span class="search-icon" aria-hidden="true"></span>
+    </button>
+
+    <div class="search-results" *ngIf="searchFocused && searchTerm.trim().length > 1">
+      <button
+        type="button"
+        class="search-result"
+        *ngFor="let item of filteredMenuItems"
+        (mousedown)="goTo(item)"
+      >
+        <small>{{ item.group }}</small>
+        <span>{{ item.label }}</span>
+      </button>
+
+      <div class="search-empty" *ngIf="filteredMenuItems.length === 0">
+        No encontre ese modulo
+      </div>
+    </div>
   </div>
 
   <div class="topbar-right">

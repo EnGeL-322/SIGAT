@@ -25,7 +25,7 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<ResponseDTO> listarTodos() {
         try {
-            List<UsuarioDTO> usuarios = usuarioService.listarTodos();
+            List<UsuarioDTO> usuarios = usuarioService.listarActivos();
             return ResponseEntity.ok(new ResponseDTO(true, "Usuarios obtenidos", usuarios));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));

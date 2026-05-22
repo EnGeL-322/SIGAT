@@ -90,6 +90,12 @@ app-sidebar {
   padding: 8px 0 22px;
 }
 
+app-topbar {
+  position: relative;
+  z-index: 80;
+  display: block;
+}
+
 @media (max-width: 1024px) {
   .dashboard-shell {
     grid-template-columns: 1fr;

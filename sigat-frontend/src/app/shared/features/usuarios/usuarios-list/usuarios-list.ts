@@ -46,9 +46,9 @@ export class UsuariosListComponent implements OnInit {
         if (roles.length) {
           this.roles = this.prepareRoles(roles);
         }
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: () => this.cdr.detectChanges()
+      error: () => this.cdr.markForCheck()
     });
   }
 
@@ -59,7 +59,7 @@ export class UsuariosListComponent implements OnInit {
         rolNombre: this.displayRole(usuario.rolNombre)
       }));
       this.filtrar();
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
@@ -71,6 +71,7 @@ export class UsuariosListComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.error = '';
     this.editId = null;
     this.form.get('password')?.setValidators([Validators.required]);
     this.form.get('password')?.updateValueAndValidity();
@@ -85,6 +86,7 @@ export class UsuariosListComponent implements OnInit {
   }
 
   openEdit(user: any): void {
+    this.error = '';
     this.editId = user.id;
     this.form.get('password')?.clearValidators();
     this.form.get('password')?.updateValueAndValidity();
@@ -101,6 +103,7 @@ export class UsuariosListComponent implements OnInit {
   save(): void {
     if (this.form.invalid) return;
 
+    this.error = '';
     const payload = this.form.getRawValue();
     payload.password = payload.password?.trim();
 
@@ -109,14 +112,20 @@ export class UsuariosListComponent implements OnInit {
     }
 
     if (this.editId) {
-      this.api.actualizarUsuario(this.editId, payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.actualizarUsuario(this.editId, payload).subscribe({
+        next: () => this.closeModalAndReload(),
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo actualizar el usuario');
+          this.cdr.markForCheck();
+        }
       });
     } else {
-      this.api.crearUsuario(payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.crearUsuario(payload).subscribe({
+        next: () => this.closeModalAndReload(),
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo crear el usuario');
+          this.cdr.markForCheck();
+        }
       });
     }
   }
@@ -129,7 +138,7 @@ export class UsuariosListComponent implements OnInit {
       next: () => this.load(),
       error: (err) => {
         this.error = this.extractError(err, 'No se pudo eliminar el usuario');
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -164,5 +173,13 @@ export class UsuariosListComponent implements OnInit {
 
   private extractError(err: any, fallback: string): string {
     return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
+  }
+
+  private closeModalAndReload(): void {
+    setTimeout(() => {
+      this.showModal = false;
+      this.load();
+      this.cdr.markForCheck();
+    }, 0);
   }
 }

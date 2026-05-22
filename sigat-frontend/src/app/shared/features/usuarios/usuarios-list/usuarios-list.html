@@ -57,7 +57,7 @@
         </label>
 
         <label class="field-label">
-          <span>{{ editId ? 'Nueva contraseña' : 'Contraseña' }}</span>
+          <span>{{ editId ? 'Nueva contrasena' : 'Contrasena' }}</span>
           <input formControlName="password" type="password" [placeholder]="editId ? 'Nueva contrasena opcional' : 'Contrasena'">
           <small *ngIf="editId">Si queda vacio, se mantiene la contrasena actual.</small>
         </label>
@@ -71,6 +71,7 @@
             </option>
           </select>
         </label>
+        <p class="form-error" *ngIf="error">{{ error }}</p>
 
         <div class="modal-actions">
           <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>

@@ -26,7 +26,7 @@ public class ProveedorController {
     @GetMapping
     public ResponseEntity<ResponseDTO> listarTodos() {
         try {
-            List<ProveedorDTO> proveedores = proveedorService.listarTodos();
+            List<ProveedorDTO> proveedores = proveedorService.listarActivos();
             return ResponseEntity.ok(new ResponseDTO(true, "Proveedores obtenidos", proveedores));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));

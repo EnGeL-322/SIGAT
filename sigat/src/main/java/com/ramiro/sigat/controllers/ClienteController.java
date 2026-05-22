@@ -27,7 +27,7 @@ public class ClienteController {
     @GetMapping
     public ResponseEntity<ResponseDTO> listarTodos() {
         try {
-            List<ClienteDTO> clientes = clienteService.listarTodos();
+            List<ClienteDTO> clientes = clienteService.listarActivos();
             return ResponseEntity.ok(new ResponseDTO(true, "Clientes obtenidos", clientes));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));

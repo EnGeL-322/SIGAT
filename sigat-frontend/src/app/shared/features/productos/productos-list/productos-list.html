@@ -53,6 +53,7 @@
         <input formControlName="precio" type="number" placeholder="Precio">
         <input formControlName="stockMinimo" type="number" placeholder="Stock minimo">
         <textarea formControlName="descripcion" placeholder="Descripcion"></textarea>
+        <p class="form-error" *ngIf="error">{{ error }}</p>
 
         <div class="modal-actions">
           <button type="button" class="secondary-btn" (click)="showModal = false">Cancelar</button>

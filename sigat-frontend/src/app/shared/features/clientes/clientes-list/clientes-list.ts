@@ -53,6 +53,7 @@ export class ClientesListComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.error = '';
     this.editId = null;
     this.form.reset({
       nombre: '',
@@ -66,6 +67,7 @@ export class ClientesListComponent implements OnInit {
   }
 
   openEdit(item: any): void {
+    this.error = '';
     this.editId = item.id;
     this.selected = item;
     this.form.patchValue(item);
@@ -79,17 +81,30 @@ export class ClientesListComponent implements OnInit {
 
   save(): void {
     if (this.form.invalid) return;
+    this.error = '';
     const payload = this.form.getRawValue();
 
     if (this.editId) {
-      this.api.actualizarCliente(this.editId, payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.actualizarCliente(this.editId, payload).subscribe({
+        next: () => {
+          this.showModal = false;
+          this.load();
+        },
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo actualizar el cliente');
+          this.cdr.detectChanges();
+        }
       });
     } else {
-      this.api.crearCliente(payload).subscribe(() => {
-        this.showModal = false;
-        this.load();
+      this.api.crearCliente(payload).subscribe({
+        next: () => {
+          this.showModal = false;
+          this.load();
+        },
+        error: (err) => {
+          this.error = this.extractError(err, 'No se pudo crear el cliente');
+          this.cdr.detectChanges();
+        }
       });
     }
   }

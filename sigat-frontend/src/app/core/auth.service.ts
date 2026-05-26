@@ -30,6 +30,30 @@ export class AuthService {
     return this.api.register(payload);
   }
 
+  getAuthConfig() {
+    return this.api.obtenerAuthConfig();
+  }
+
+  loginWithGoogle(idToken: string) {
+    return this.api.loginGoogle(idToken).pipe(
+      tap((response: any) => {
+        if (response?.exito) {
+          localStorage.setItem(this.tokenKey, response.datos.token);
+          localStorage.setItem(this.userKey, JSON.stringify(response.datos));
+          this.userSubject.next(response.datos);
+        }
+      })
+    );
+  }
+
+  requestPasswordReset(email: string) {
+    return this.api.solicitarCodigoPassword(email);
+  }
+
+  resetPassword(payload: any) {
+    return this.api.restablecerPassword(payload);
+  }
+
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);

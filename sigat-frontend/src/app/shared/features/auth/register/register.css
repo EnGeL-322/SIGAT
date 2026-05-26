@@ -45,6 +45,21 @@
   align-self: flex-start;
 }
 
+.back-btn {
+  position: absolute;
+  top: 28px;
+  right: 32px;
+  border-radius: 999px;
+  padding: 14px 26px;
+  background: rgba(255, 255, 255, 0.38);
+  color: #665d67;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  box-shadow: 0 12px 22px rgba(116, 74, 121, 0.16);
+}
+
 .auth-card {
   width: min(760px, 92%);
   text-align: center;
@@ -71,12 +86,30 @@
   width: 74px;
   height: 74px;
   border-radius: 50%;
+  border: none;
   background: rgba(255, 255, 255, 0.9);
   display: grid;
   place-items: center;
   font-size: 36px;
   font-weight: 700;
   box-shadow: 0 10px 18px rgba(113, 78, 129, 0.16);
+  cursor: pointer;
+  margin: 0;
+  text-transform: none;
+}
+
+.circle:hover {
+  transform: translateY(-2px);
+}
+
+.circle:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.circle:disabled:hover {
+  transform: none;
 }
 
 .google {
@@ -89,6 +122,15 @@
 
 .xbrand {
   color: #111111;
+}
+
+.google-help {
+  margin: -12px 0 18px;
+  color: rgba(102, 93, 103, 0.92);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .two-cols {
@@ -116,7 +158,7 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
-.auth-card button {
+.auth-card form button {
   margin-top: 10px;
   width: min(360px, 100%);
   height: 74px;

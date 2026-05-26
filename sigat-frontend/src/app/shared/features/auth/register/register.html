@@ -1,15 +1,29 @@
 <div class="auth-page">
   <div class="auth-overlay">
+    <a class="back-btn" routerLink="/login">Atras</a>
     <img class="logo" src="/assets/images/logo-sigat.png" alt="SIGAT">
 
     <div class="auth-card register-card">
       <h1>REGISTRARSE</h1>
 
       <div class="socials">
-        <div class="circle google">G</div>
+        <button
+          class="circle google"
+          type="button"
+          [disabled]="!googleConfigured"
+          (click)="onGoogleRegister()"
+          [title]="googleConfigured ? 'Registrarse con Google' : 'Google aun no esta configurado'"
+          aria-label="Registrarse con Google"
+        >
+          G
+        </button>
         <div class="circle facebook">f</div>
         <div class="circle xbrand">X</div>
       </div>
+
+      <p class="google-help" *ngIf="googleConfigLoaded && !googleConfigured">
+        Google aun no esta configurado. Agrega tu Client ID en el backend.
+      </p>
 
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
         <div class="two-cols">

@@ -18,6 +18,22 @@ export class ApiService {
     return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/register`, usuario));
   }
 
+  obtenerAuthConfig(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/auth/config`));
+  }
+
+  loginGoogle(idToken: string): Observable<any> {
+    return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/google`, { idToken }));
+  }
+
+  solicitarCodigoPassword(email: string): Observable<any> {
+    return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/forgot-password`, { email }));
+  }
+
+  restablecerPassword(payload: any): Observable<any> {
+    return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/reset-password`, payload));
+  }
+
   obtenerProductos(): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/productos`));
   }

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './shared/features/auth/login/login';
 import { RegisterComponent } from './shared/features/auth/register/register';
+import { ForgotPasswordComponent } from './shared/features/auth/forgot-password/forgot-password';
 import { DashboardLayoutComponent } from './layout/dashboard-layout/dashboard-layout';
 import { DashboardHomeComponent } from './shared/features/dashboard/dashboard-home/dashboard-home';
 import { ProductosListComponent } from './shared/features/productos/productos-list/productos-list';
@@ -22,6 +23,7 @@ export const routes: Routes = [
 
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
 
   {
     path: '',

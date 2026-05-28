@@ -140,7 +140,9 @@ class ApiClient {
 
   static String? messageFromResponse(dynamic response) {
     if (response is Map) {
-      return response['mensaje']?.toString() ?? response['message']?.toString();
+      final raw =
+          response['mensaje']?.toString() ?? response['message']?.toString();
+      return _friendlyMessage(raw);
     }
     return null;
   }
@@ -150,5 +152,30 @@ class ApiClient {
 
   static String _trimSlash(String value) {
     return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
+  }
+
+  static String? _friendlyMessage(String? message) {
+    if (message == null || message.trim().isEmpty) return message;
+
+    final normalized = message.toLowerCase();
+    if (normalized.contains('duplicate entry') ||
+        normalized.contains('constraint') ||
+        normalized.contains('could not execute statement')) {
+      if (normalized.contains('email') || normalized.contains('usuario')) {
+        return 'Ya existe un usuario con ese email';
+      }
+      if (normalized.contains('codigo')) {
+        return 'Ya existe un registro con ese codigo';
+      }
+      if (normalized.contains('ruc')) {
+        return 'Ya existe un proveedor con ese RUC';
+      }
+      if (normalized.contains('cedula')) {
+        return 'Ya existe un cliente con esa cedula';
+      }
+      return 'No se pudo guardar. Revisa que los datos no esten duplicados.';
+    }
+
+    return message;
   }
 }

@@ -47,7 +47,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 14),
           SigatCard(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -56,6 +56,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: AppTheme.ink,
                     fontWeight: FontWeight.w900,
+                    height: 1.05,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -230,9 +231,23 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.68),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.96),
+            const Color(0xFFEAF5F8).withValues(alpha: 0.92),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.ink.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -245,7 +260,19 @@ class _StatTile extends StatelessWidget {
                 height: compact ? 26 : 30,
                 child: Row(
                   children: [
-                    Icon(icon, color: AppTheme.blue, size: compact ? 18 : 22),
+                    Container(
+                      width: compact ? 28 : 34,
+                      height: compact ? 28 : 34,
+                      decoration: BoxDecoration(
+                        color: AppTheme.blue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppTheme.blue,
+                        size: compact ? 17 : 20,
+                      ),
+                    ),
                     const Spacer(),
                     FittedBox(
                       fit: BoxFit.scaleDown,

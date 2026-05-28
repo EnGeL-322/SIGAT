@@ -25,9 +25,9 @@ class AuthFrame extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFFFFECF6).withValues(alpha: 0.46),
-                  const Color(0xFFD0AAE5).withValues(alpha: 0.28),
-                  Colors.white.withValues(alpha: 0.18),
+                  AppTheme.navy.withValues(alpha: 0.72),
+                  AppTheme.blue.withValues(alpha: 0.34),
+                  Colors.white.withValues(alpha: 0.2),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -69,24 +69,25 @@ class AuthFrame extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 2.6,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                      height: 1,
                     ),
                   ),
                   const SizedBox(height: 26),
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.34),
+                        color: Colors.white.withValues(alpha: 0.72),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.ink.withValues(alpha: 0.14),
-                          blurRadius: 24,
-                          offset: const Offset(0, 14),
+                          color: AppTheme.ink.withValues(alpha: 0.18),
+                          blurRadius: 30,
+                          offset: const Offset(0, 18),
                         ),
                       ],
                     ),

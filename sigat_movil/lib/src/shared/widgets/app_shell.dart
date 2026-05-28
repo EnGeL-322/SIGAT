@@ -26,6 +26,7 @@ class AppShell extends StatelessWidget {
       drawer: _SigatDrawer(activeRoute: activeRoute),
       extendBodyBehindAppBar: false,
       appBar: AppBar(
+        toolbarHeight: 72,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -66,7 +67,7 @@ class AppShell extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFAEB9CD), Color(0xFFD4DBEA)],
+            colors: [Color(0xFF14365D), Color(0xFF48A6C6), Color(0xFFF3F7FA)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -76,7 +77,7 @@ class AppShell extends StatelessWidget {
             SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -87,6 +88,7 @@ class AppShell extends StatelessWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0,
+                            height: 1.05,
                           ),
                     ),
                     const SizedBox(height: 12),
@@ -113,6 +115,7 @@ class _SigatDrawer extends StatelessWidget {
     final groups = groupedMenuItems(session.isAdmin);
 
     return Drawer(
+      backgroundColor: const Color(0xFFF7FAFC),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,6 +147,7 @@ class _SigatDrawer extends StatelessWidget {
                     ),
                     for (final item in group.value)
                       ListTile(
+                        minVerticalPadding: 10,
                         selected: item.route == activeRoute,
                         leading: Icon(item.icon),
                         title: Text(item.label),

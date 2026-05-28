@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class UsuarioService {
@@ -32,12 +33,19 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO crearUsuario(UsuarioDTO dto) {
+        String email = normalizarEmail(dto.getEmail());
+        validarEmailDisponible(email, null);
+
         Usuario usuario = new Usuario();
-        usuario.setEmail(dto.getEmail());
-        usuario.setNombre(dto.getNombre());
-        usuario.setApellido(dto.getApellido());
-        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        usuario.setEmail(email);
+        usuario.setNombre(requerido(dto.getNombre(), "El nombre"));
+        usuario.setApellido(requerido(dto.getApellido(), "El apellido"));
+        usuario.setPassword(passwordEncoder.encode(validarPasswordNueva(dto.getPassword())));
         usuario.setActivo(true);
+
+        if (dto.getRolId() == null) {
+            throw new RuntimeException("Debe seleccionar un rol");
+        }
 
         Rol rol = rolRepository.findById(dto.getRolId())
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
@@ -56,7 +64,7 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public UsuarioDTO obtenerPorEmail(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(normalizarEmail(email))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         return convertirADTO(usuario);
     }
@@ -79,12 +87,15 @@ public class UsuarioService {
     public UsuarioDTO actualizar(Long id, UsuarioDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        usuario.setNombre(dto.getNombre());
-        usuario.setApellido(dto.getApellido());
-        usuario.setEmail(dto.getEmail());
+        String email = normalizarEmail(dto.getEmail());
+        validarEmailDisponible(email, id);
+
+        usuario.setNombre(requerido(dto.getNombre(), "El nombre"));
+        usuario.setApellido(requerido(dto.getApellido(), "El apellido"));
+        usuario.setEmail(email);
 
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+            usuario.setPassword(passwordEncoder.encode(validarPasswordNueva(dto.getPassword())));
         }
 
         if (dto.getRolId() != null) {
@@ -111,7 +122,10 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public Usuario obtenerUsuarioPorEmail(String email) {
-        return usuarioRepository.findByEmail(email).orElse(null);
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return usuarioRepository.findByEmailIgnoreCase(email.trim()).orElse(null);
     }
 
     private UsuarioDTO convertirADTO(Usuario usuario) {
@@ -130,5 +144,36 @@ public class UsuarioService {
         if (!rolService.esRolPermitido(rol)) {
             throw new RuntimeException("Solo se permiten los roles ADMIN y TRABAJADOR");
         }
+    }
+
+    private void validarEmailDisponible(String email, Long idPermitido) {
+        usuarioRepository.findByEmailIgnoreCase(email).ifPresent(usuario -> {
+            if (idPermitido == null || !usuario.getId().equals(idPermitido)) {
+                throw new RuntimeException("Ya existe un usuario con ese email");
+            }
+        });
+    }
+
+    private String normalizarEmail(String email) {
+        String valor = requerido(email, "El email").toLowerCase(Locale.ROOT);
+        if (!valor.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new RuntimeException("El email no es valido");
+        }
+        return valor;
+    }
+
+    private String validarPasswordNueva(String password) {
+        String valor = requerido(password, "La contrasena");
+        if (valor.length() < 6) {
+            throw new RuntimeException("La contrasena debe tener al menos 6 caracteres");
+        }
+        return valor;
+    }
+
+    private String requerido(String valor, String campo) {
+        if (valor == null || valor.isBlank()) {
+            throw new RuntimeException(campo + " es obligatorio");
+        }
+        return valor.trim();
     }
 }

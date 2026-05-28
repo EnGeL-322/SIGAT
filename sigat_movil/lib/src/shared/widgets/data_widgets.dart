@@ -28,7 +28,7 @@ class ModuleHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: Colors.white.withValues(alpha: 0.78),
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
+                  letterSpacing: 0.6,
                 ),
               ),
               Text(
@@ -61,7 +61,19 @@ class SigatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(padding: padding, child: child),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.ink.withValues(alpha: 0.08),
+              blurRadius: 22,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }
@@ -77,8 +89,8 @@ class StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.24)),
       ),
       child: Text(
@@ -138,7 +150,7 @@ class ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.rose.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.rose.withValues(alpha: 0.24)),
       ),
       child: Row(
@@ -148,6 +160,8 @@ class ErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),

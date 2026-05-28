@@ -274,10 +274,31 @@ class _UsersPageState extends State<UsersPage> {
                               });
 
                               try {
+                                final emailValue = _normalizeEmail(email.text);
+                                final currentId = isEdit
+                                    ? _asInt(user['id'])
+                                    : null;
+                                final duplicated = _users.any((existing) {
+                                  return _normalizeEmail(
+                                            existing['email']?.toString() ?? '',
+                                          ) ==
+                                          emailValue &&
+                                      _asInt(existing['id']) != currentId;
+                                });
+
+                                if (duplicated) {
+                                  setSheetState(() {
+                                    formError =
+                                        'Ya existe un usuario con ese email';
+                                    saving = false;
+                                  });
+                                  return;
+                                }
+
                                 final payload = <String, dynamic>{
                                   'nombre': nombre.text.trim(),
                                   'apellido': apellido.text.trim(),
-                                  'email': email.text.trim(),
+                                  'email': emailValue,
                                   'rolId': roleId,
                                 };
                                 if (password.text.trim().isNotEmpty ||
@@ -299,6 +320,19 @@ class _UsersPageState extends State<UsersPage> {
                                 }
                                 Navigator.pop(sheetContext);
                                 await _load();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(
+                                    this.context,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isEdit
+                                            ? 'Usuario actualizado'
+                                            : 'Usuario creado',
+                                      ),
+                                    ),
+                                  );
+                                }
                               } on ApiException catch (error) {
                                 setSheetState(() => formError = error.message);
                               } finally {
@@ -361,6 +395,11 @@ class _UsersPageState extends State<UsersPage> {
     try {
       await api.delete('/usuarios/${user['id']}');
       await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuario eliminado')),
+        );
+      }
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
     }
@@ -394,6 +433,8 @@ class _UsersPageState extends State<UsersPage> {
   String? _required(String? value) {
     return value == null || value.trim().isEmpty ? 'Campo requerido' : null;
   }
+
+  String _normalizeEmail(String value) => value.trim().toLowerCase();
 }
 
 int? _asInt(Object? value) {

@@ -2,6 +2,7 @@ package com.ramiro.sigat.controllers;
 import com.ramiro.sigat.dto.*;
 import com.ramiro.sigat.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,8 @@ public class UsuarioController {
             UsuarioDTO nuevo = usuarioService.crearUsuario(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ResponseDTO(true, "Usuario creado", nuevo));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body(new ResponseDTO(false, "Ya existe un usuario con ese email", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
         }
@@ -45,6 +48,8 @@ public class UsuarioController {
         try {
             UsuarioDTO actualizado = usuarioService.actualizar(id, dto);
             return ResponseEntity.ok(new ResponseDTO(true, "Usuario actualizado", actualizado));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body(new ResponseDTO(false, "Ya existe un usuario con ese email", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
         }

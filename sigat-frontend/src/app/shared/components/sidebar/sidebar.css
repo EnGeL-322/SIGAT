@@ -5,9 +5,9 @@
   flex-direction: column;
   min-height: 100vh;
   padding: 18px 16px 24px;
-  background: linear-gradient(180deg, rgba(241, 244, 250, 0.7) 0%, rgba(220, 227, 239, 0.62) 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.48);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.28);
+  background: rgba(247, 250, 252, 0.88);
+  border-right: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 18px 0 38px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(12px);
 }
 
@@ -69,27 +69,28 @@
 
 .menu-group h4 {
   margin: 0;
-  font-size: 19px;
-  color: #eef5ff;
-  letter-spacing: 0.04em;
+  font-size: 15px;
+  color: #1d2b45;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  text-shadow: 0 2px 12px rgba(46, 62, 106, 0.18);
 }
 
 .menu-group a,
 .menu-group span {
   text-decoration: none;
-  color: rgba(245, 248, 255, 0.82);
+  color: rgba(29, 43, 69, 0.72);
   font-size: 15px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .menu-group a {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 26px;
-  padding-left: 38px;
+  min-height: 40px;
+  padding: 0 10px 0 38px;
+  border-radius: 12px;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .menu-link-icon {
@@ -108,7 +109,9 @@
 
 .menu-group a:hover,
 .active-link {
-  color: #3559da;
+  color: #1f56c1;
+  background: rgba(47, 128, 237, 0.1);
+  transform: translateX(2px);
 }
 
 .muted span {
@@ -124,9 +127,9 @@
   width: 100%;
   min-height: 42px;
   border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.36);
-  color: #2b3a5b;
+  border-radius: 12px;
+  background: rgba(220, 76, 69, 0.1);
+  color: #9d302d;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
@@ -137,6 +140,20 @@
 
 .logout-btn:hover {
   transform: translateY(-1px);
-  background: #f45f4b;
+  background: #dc4c45;
   color: #ffffff;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    min-height: auto;
+    max-height: 78vh;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+  }
+
+  .menu {
+    gap: 14px;
+  }
 }

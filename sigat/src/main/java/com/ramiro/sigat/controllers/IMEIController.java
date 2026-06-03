@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 @RestController
 @RequestMapping("/imei")
-@CrossOrigin(origins = "http://localhost:4200")
 public class IMEIController {
     @Autowired
     private IMEIService imeiService;
@@ -76,6 +75,16 @@ public class IMEIController {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
         }
     }
+    @GetMapping("/compra/{compraId}")
+    public ResponseEntity<ResponseDTO> listarPorCompra(@PathVariable Long compraId) {
+        try {
+            List<IMEIDTO> imeis = imeiService.listarPorCompra(compraId);
+            return ResponseEntity.ok(new ResponseDTO(true, "IMEIs de la compra", imeis));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
+
     @GetMapping("/estado/{estado}")
     public ResponseEntity<ResponseDTO> listarPorEstado(@PathVariable String estado) {
         try {

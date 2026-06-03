@@ -66,10 +66,41 @@
             <small>IMEI generados</small>
             <span>{{ d.imeis?.length || 0 }}</span>
           </div>
+          <div>
+            <button class="icon green" type="button" (click)="verIMEIs(d)" title="Ver IMEIs">&#128241;</button>
+          </div>
         </div>
       </div>
 
       <button class="primary-btn" type="button" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="imeiModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="imeiModal = false" aria-label="Cerrar">X</button>
+      <h3>IMEIs — {{ detalleSeleccionado?.productoNombre }}</h3>
+      <p><strong>Compra:</strong> {{ selected?.numeroCompra }} &nbsp;|&nbsp; <strong>Total:</strong> {{ imeisDelDetalle.length }} unidades</p>
+
+      <input class="imei-search" type="text" [(ngModel)]="busquedaImei" placeholder="Buscar por IMEI...">
+
+      <div class="table-shell" style="margin-top:12px">
+        <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr">
+          <span>Numero IMEI</span>
+          <span>Estado</span>
+          <span>Fecha ingreso</span>
+        </div>
+        <div class="table-row" style="grid-template-columns: 2fr 1fr 1fr" *ngFor="let imei of imeisFiltrados">
+          <span style="font-family:monospace">{{ imei.numero }}</span>
+          <span [style.color]="imei.estado === 'EN_STOCK' ? '#22c55e' : imei.estado === 'VENDIDO' ? '#f59e0b' : '#ef4444'">
+            {{ imei.estado }}
+          </span>
+          <span>{{ imei.fechaIngreso | date:'shortDate' }}</span>
+        </div>
+        <p *ngIf="imeisFiltrados.length === 0" style="padding:12px;text-align:center;color:#888">No se encontraron IMEIs con ese criterio.</p>
+      </div>
+
+      <button class="primary-btn" type="button" (click)="imeiModal = false" style="margin-top:16px">Cerrar</button>
     </div>
   </div>
 </section>

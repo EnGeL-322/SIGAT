@@ -160,4 +160,14 @@ export class VentasFormComponent implements OnInit {
   total(): number {
     return this.detalles.reduce((sum, d) => sum + d.subtotal, 0);
   }
+
+  get productoSeleccionado(): any {
+    return this.productos.find(p => p.id == this.detalle.productoId) || null;
+  }
+
+  get stockDisponible(): number | null {
+    const producto = this.productoSeleccionado;
+    if (!producto) return null;
+    return producto.stockActual ?? 0;
+  }
 }

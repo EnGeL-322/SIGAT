@@ -186,8 +186,8 @@ export class ApiService {
           this.refreshView();
         },
         error: (error) => {
-          this.refreshView();
           subscriber.error(error);
+          this.refreshView();
         },
         complete: () => subscriber.complete()
       });

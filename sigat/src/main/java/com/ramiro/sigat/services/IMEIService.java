@@ -91,6 +91,13 @@ public class IMEIService {
     }
 
     @Transactional(readOnly = true)
+    public List<IMEIDTO> listarPorCompra(Long compraId) {
+        return imeiRepository.findByCompraId(compraId).stream()
+                .map(this::convertirADTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<IMEIDTO> listarPorEstado(String estado) {
         IMEI.EstadoIMEI estadoEnum = IMEI.EstadoIMEI.valueOf(estado);
         return imeiRepository.findByEstado(estadoEnum).stream()

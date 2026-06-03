@@ -1,12 +1,13 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../../core/api.service';
 
 @Component({
   selector: 'app-compras-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './compras-list.html',
   styleUrl: './compras-list.css'
 })
@@ -16,6 +17,10 @@ export class ComprasListComponent implements OnInit {
   detailModal = false;
   selected: any = null;
   error = '';
+  imeiModal = false;
+  imeisDelDetalle: any[] = [];
+  detalleSeleccionado: any = null;
+  busquedaImei = '';
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -50,6 +55,24 @@ export class ComprasListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  verIMEIs(detalle: any): void {
+    // El detalle de compra ya incluye sus IMEIs (cargados en verDetalle),
+    // por lo que no se requiere una peticion HTTP adicional.
+    this.detalleSeleccionado = detalle;
+    this.imeisDelDetalle = detalle?.imeis || [];
+    this.busquedaImei = '';
+    this.imeiModal = true;
+    this.cdr.detectChanges();
+  }
+
+  get imeisFiltrados(): any[] {
+    const q = this.busquedaImei.trim().toLowerCase();
+    if (!q) return this.imeisDelDetalle;
+    return this.imeisDelDetalle.filter(imei =>
+      (imei.numero || '').toLowerCase().includes(q)
+    );
   }
 
   remove(id: number): void {

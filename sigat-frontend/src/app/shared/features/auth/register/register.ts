@@ -76,7 +76,7 @@ export class RegisterComponent implements OnInit {
       apellido: form.apellido,
       email: form.email,
       password: form.password,
-      rolId: 1
+      rolId: 2
     };
 
     this.authService.register(payload).subscribe({

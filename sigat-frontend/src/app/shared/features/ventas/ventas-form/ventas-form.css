@@ -1,1 +1,21 @@
+.stock-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #e6f4ea;
+  color: #1b8a4b;
+  width: fit-content;
+}
 
+.stock-badge.stock-low {
+  background: #fdf0d5;
+  color: #b8860b;
+}
+
+.stock-badge.stock-empty {
+  background: #fde2e1;
+  color: #c0392b;
+}

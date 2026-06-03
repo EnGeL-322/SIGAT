@@ -18,7 +18,7 @@ export class ReporteVentasComponent implements OnInit {
   ventas: any[] = [];
   clientes: any[] = [];
   productos: any[] = [];
-  filas: any[] = [];
+  filas: any[] = [];        // una fila por venta (lote)
   filtrados: any[] = [];
   selected: any = null;
   detailModal = false;
@@ -31,6 +31,9 @@ export class ReporteVentasComponent implements OnInit {
   clienteId: number | 'TODOS' = 'TODOS';
   productoId: number | 'TODOS' = 'TODOS';
   periodo: PeriodoReporte = 'DIA';
+
+  // Buscador dentro del detalle de venta (filtra por IMEI o producto)
+  busquedaImei = '';
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -52,7 +55,8 @@ export class ReporteVentasComponent implements OnInit {
     this.filtrados = this.filas.filter(fila => {
       const coincidePeriodo = this.estaEnPeriodo(fila.fechaVenta);
       const coincideCliente = this.clienteId === 'TODOS' || fila.clienteId === this.clienteId;
-      const coincideProducto = this.productoId === 'TODOS' || fila.productoId === this.productoId;
+      const coincideProducto = this.productoId === 'TODOS' ||
+        fila.detalles.some((d: any) => d.productoId === this.productoId);
       return coincidePeriodo && coincideCliente && coincideProducto;
     });
     this.paginaActual = 1;
@@ -64,15 +68,15 @@ export class ReporteVentasComponent implements OnInit {
   }
 
   totalVendido(): number {
-    return this.filtrados.reduce((total, fila) => total + Number(fila.precioUnitario || fila.subtotal || 0), 0);
+    return this.filtrados.reduce((total, fila) => total + Number(fila.total || 0), 0);
   }
 
   cantidadEquipos(): number {
-    return this.filtrados.length;
+    return this.filtrados.reduce((total, fila) => total + Number(fila.cantidadEquipos || 0), 0);
   }
 
   numeroVentas(): number {
-    return new Set(this.filtrados.map(fila => fila.ventaId)).size;
+    return this.filtrados.length;
   }
 
   get filasPaginadas(): any[] {
@@ -104,7 +108,25 @@ export class ReporteVentasComponent implements OnInit {
 
   verDetalle(fila: any): void {
     this.selected = fila;
+    this.busquedaImei = '';
     this.detailModal = true;
+  }
+
+  /** Equipos vendidos de la venta seleccionada, filtrados por el buscador de IMEI/producto. */
+  get equiposDetalle(): any[] {
+    const equipos = (this.selected?.detalles || []).map((d: any) => ({
+      productoNombre: d.productoNombre,
+      imeiNumero: d.imeiNumero || 'Automatico',
+      precioUnitario: d.precioUnitario,
+      estado: 'VENDIDO'
+    }));
+
+    const q = this.busquedaImei.trim().toLowerCase();
+    if (!q) return equipos;
+    return equipos.filter((e: any) =>
+      (e.imeiNumero || '').toLowerCase().includes(q) ||
+      (e.productoNombre || '').toLowerCase().includes(q)
+    );
   }
 
   imprimirFila(fila: any): void {
@@ -116,9 +138,9 @@ export class ReporteVentasComponent implements OnInit {
       fila.codigoVenta,
       this.formatearFecha(fila.fechaVenta),
       fila.clienteNombre,
-      fila.productoNombre,
-      fila.imeiNumero,
-      fila.precioUnitario
+      fila.cantidadEquipos,
+      fila.total,
+      (fila.detalles || []).map((d: any) => d.imeiNumero).filter(Boolean).join(', ')
     ]);
     this.descargarExcel('reporte-ventas.xls', rows);
   }
@@ -138,20 +160,27 @@ export class ReporteVentasComponent implements OnInit {
 
     const requests = this.ventas.map(venta =>
       this.api.obtenerDetallesVenta(venta.id).pipe(
-        map((res: any) => (res?.datos || []).map((detalle: any) => ({
-          ...detalle,
-          ventaId: venta.id,
-          codigoVenta: venta.numeroVenta,
-          fechaVenta: venta.fechaVenta,
-          clienteId: venta.clienteId,
-          clienteNombre: venta.clienteNombre
-        }))),
-        catchError(() => of([]))
+        map((res: any) => {
+          const detalles = res?.datos || [];
+          return {
+            id: venta.id,
+            codigoVenta: venta.numeroVenta,
+            fechaVenta: venta.fechaVenta,
+            clienteId: venta.clienteId,
+            clienteNombre: venta.clienteNombre,
+            vendedorNombre: venta.vendedorNombre || 'SIGAT',
+            estado: venta.estado,
+            total: venta.total ?? detalles.reduce((s: number, d: any) => s + Number(d.subtotal || d.precioUnitario || 0), 0),
+            detalles,
+            cantidadEquipos: detalles.length
+          };
+        }),
+        catchError(() => of(null))
       )
     );
 
-    forkJoin(requests).subscribe((grupos: any[]) => {
-      this.filas = grupos.flat();
+    forkJoin(requests).subscribe((filas: any[]) => {
+      this.filas = filas.filter(Boolean);
       this.filtrar();
       this.loading = false;
       this.cdr.detectChanges();
@@ -203,11 +232,11 @@ export class ReporteVentasComponent implements OnInit {
     const htmlRows = rows.map(row => `<tr>${row.map(col => `<td>${col ?? ''}</td>`).join('')}</tr>`).join('');
     const html = `
       <table>
-        <thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>IMEI</th><th>Precio</th></tr></thead>
+        <thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Equipos</th><th>Total</th><th>IMEI</th></tr></thead>
         <tbody>${htmlRows}</tbody>
       </table>
     `;
-    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = nombre;
@@ -215,16 +244,16 @@ export class ReporteVentasComponent implements OnInit {
     URL.revokeObjectURL(link.href);
   }
 
-  private imprimirReporte(titulo: string, rows: any[]): void {
-    const total = rows.reduce((sum, fila) => sum + Number(fila.precioUnitario || fila.subtotal || 0), 0);
-    const htmlRows = rows.map(fila => `
+  private imprimirReporte(titulo: string, filas: any[]): void {
+    const total = filas.reduce((sum, fila) => sum + Number(fila.total || 0), 0);
+    const htmlRows = filas.map(fila => `
       <tr>
         <td>${fila.codigoVenta ?? ''}</td>
         <td>${this.formatearFecha(fila.fechaVenta)}</td>
         <td>${fila.clienteNombre ?? ''}</td>
-        <td>${fila.productoNombre ?? ''}</td>
-        <td>${fila.imeiNumero ?? ''}</td>
-        <td>${fila.precioUnitario ?? ''}</td>
+        <td>${fila.cantidadEquipos ?? ''}</td>
+        <td>S/ ${Number(fila.total || 0).toFixed(2)}</td>
+        <td>${(fila.detalles || []).map((d: any) => d.imeiNumero).filter(Boolean).join(', ')}</td>
       </tr>
     `).join('');
     const win = window.open('', '_blank');
@@ -235,9 +264,9 @@ export class ReporteVentasComponent implements OnInit {
         th{background:#7d82ef;color:white}
       </style></head><body>
       <h1>${titulo}</h1>
-      <p>Fecha base: ${this.fecha}</p>
+      <p>Fecha base: ${this.fecha || 'Todas'}</p>
       <p>Total vendido: S/ ${total.toFixed(2)}</p>
-      <table><thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>IMEI</th><th>Precio</th></tr></thead><tbody>${htmlRows}</tbody></table>
+      <table><thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Equipos</th><th>Total</th><th>IMEI</th></tr></thead><tbody>${htmlRows}</tbody></table>
       </body></html>
     `);
     win?.document.close();

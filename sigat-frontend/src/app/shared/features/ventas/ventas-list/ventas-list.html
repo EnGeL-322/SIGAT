@@ -44,8 +44,9 @@
       <p><strong>Total vendido</strong> <span>S/ {{ selected?.total }}</span></p>
 
       <h3 class="detail-subtitle">Equipos vendidos en esta venta</h3>
+      <input class="imei-search" type="text" [(ngModel)]="busquedaImei" placeholder="Buscar por IMEI o producto...">
       <div class="mini-list">
-        <div class="mini-item sale-detail-item" *ngFor="let d of detalles; let i = index">
+        <div class="mini-item sale-detail-item" *ngFor="let d of detallesFiltrados; let i = index">
           <div class="detail-line-number">{{ i + 1 }}</div>
           <div>
             <small>Producto vendido</small>
@@ -61,6 +62,7 @@
           </div>
           <button class="icon blue" type="button" (click)="verTelefono(d)" aria-label="Ver telefono e IMEI">&#128241;</button>
         </div>
+        <p *ngIf="!detallesFiltrados.length" class="empty-state">No se encontraron equipos con ese criterio.</p>
       </div>
 
       <button class="primary-btn" (click)="detailModal = false">Cerrar</button>

@@ -10,6 +10,7 @@ services:
       - "3307:3306"
     volumes:
       - sigat_mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
       interval: 10s

@@ -43,9 +43,8 @@
       <span>Codigo venta</span>
       <span>Fecha</span>
       <span>Cliente</span>
-      <span>Producto</span>
-      <span>IMEI</span>
-      <span>Precio</span>
+      <span>Equipos</span>
+      <span>Total</span>
       <span>Acciones</span>
     </div>
 
@@ -58,9 +57,8 @@
       <span>{{ fila.codigoVenta }}</span>
       <span>{{ fila.fechaVenta | date:'dd/MM/yyyy' }}</span>
       <span>{{ fila.clienteNombre }}</span>
-      <span>{{ fila.productoNombre }}</span>
-      <span>{{ fila.imeiNumero }}</span>
-      <span>S/ {{ fila.precioUnitario }}</span>
+      <span>{{ fila.cantidadEquipos }}</span>
+      <span>S/ {{ fila.total | number:'1.2-2' }}</span>
       <span class="row-actions">
         <button class="icon green" (click)="verDetalle(fila)">Ver</button>
         <button class="icon yellow" (click)="imprimirFila(fila)">PDF</button>
@@ -118,9 +116,35 @@
       <h3>Detalle de venta</h3>
       <p><strong>Codigo</strong> <span>{{ selected?.codigoVenta }}</span></p>
       <p><strong>Cliente</strong> <span>{{ selected?.clienteNombre }}</span></p>
-      <p><strong>Producto</strong> <span>{{ selected?.productoNombre }}</span></p>
-      <p><strong>IMEI</strong> <span>{{ selected?.imeiNumero }}</span></p>
-      <p><strong>Precio</strong> <span>S/ {{ selected?.precioUnitario }}</span></p>
+      <p><strong>Vendedor</strong> <span>{{ selected?.vendedorNombre }}</span></p>
+      <p><strong>Total vendido</strong> <span>S/ {{ selected?.total | number:'1.2-2' }}</span></p>
+
+      <h3 class="detail-subtitle">Equipos vendidos en esta venta</h3>
+      <input class="imei-search" type="text" [(ngModel)]="busquedaImei"
+             placeholder="Buscar por IMEI o producto...">
+
+      <div class="mini-list">
+        <div class="mini-item imei-item report-line" *ngFor="let equipo of equiposDetalle; let i = index">
+          <div class="detail-line-number">{{ i + 1 }}</div>
+          <div>
+            <small>Producto</small>
+            <span>{{ equipo.productoNombre }}</span>
+          </div>
+          <div>
+            <small>IMEI</small>
+            <span>{{ equipo.imeiNumero }}</span>
+          </div>
+          <div>
+            <small>Precio</small>
+            <span>S/ {{ equipo.precioUnitario }}</span>
+          </div>
+          <b class="badge danger">{{ equipo.estado }}</b>
+        </div>
+      </div>
+      <p *ngIf="!equiposDetalle.length" class="empty-state">
+        No se encontraron equipos con ese criterio.
+      </p>
+
       <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
     </div>
   </div>

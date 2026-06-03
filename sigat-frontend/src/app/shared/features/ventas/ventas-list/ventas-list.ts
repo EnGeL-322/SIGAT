@@ -1,12 +1,13 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../../core/api.service';
 
 @Component({
   selector: 'app-ventas-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './ventas-list.html',
   styleUrl: './ventas-list.css'
 })
@@ -18,6 +19,7 @@ export class VentasListComponent implements OnInit {
   phoneModal = false;
   selected: any = null;
   error = '';
+  busquedaImei = '';
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -41,6 +43,7 @@ export class VentasListComponent implements OnInit {
   verDetalle(item: any): void {
     this.error = '';
     this.selected = item;
+    this.busquedaImei = '';
     this.api.obtenerDetallesVenta(item.id).subscribe({
       next: (res: any) => {
         this.detalles = res?.datos || [];
@@ -57,6 +60,15 @@ export class VentasListComponent implements OnInit {
   verTelefono(detalle: any): void {
     this.selectedPhone = detalle;
     this.phoneModal = true;
+  }
+
+  get detallesFiltrados(): any[] {
+    const q = this.busquedaImei.trim().toLowerCase();
+    if (!q) return this.detalles;
+    return this.detalles.filter(d =>
+      (d.imeiNumero || '').toLowerCase().includes(q) ||
+      (d.productoNombre || '').toLowerCase().includes(q)
+    );
   }
 
   remove(id: number): void {

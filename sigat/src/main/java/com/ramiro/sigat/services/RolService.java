@@ -62,7 +62,7 @@ public class RolService {
             return "ADMIN";
         }
 
-        if (normalizado.contains("TRABAJADOR") || normalizado.contains("GERENTE")) {
+        if (normalizado.contains("TRABAJADOR") || normalizado.contains("VENDEDOR") || normalizado.contains("GERENTE")) {
             return "TRABAJADOR";
         }
 

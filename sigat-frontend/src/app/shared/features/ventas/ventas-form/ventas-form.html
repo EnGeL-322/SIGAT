@@ -57,6 +57,12 @@
               <option [ngValue]="null">Producto</option>
               <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
             </select>
+            <span class="stock-badge" *ngIf="stockDisponible !== null"
+                  [class.stock-low]="stockDisponible <= 5"
+                  [class.stock-empty]="stockDisponible === 0">
+              <ng-container *ngIf="stockDisponible === 0">Sin stock disponible</ng-container>
+              <ng-container *ngIf="stockDisponible! > 0">Quedan {{ stockDisponible }} dispositivo(s)</ng-container>
+            </span>
           </label>
 
           <label>

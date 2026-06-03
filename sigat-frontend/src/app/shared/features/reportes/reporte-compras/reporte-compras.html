@@ -41,7 +41,6 @@
       <span>Codigo compra</span>
       <span>Fecha</span>
       <span>Proveedor</span>
-      <span>Producto</span>
       <span>Total equipos</span>
       <span>Total</span>
       <span>Acciones</span>
@@ -54,12 +53,10 @@
       <span>{{ fila.codigoCompra }}</span>
       <span>{{ fila.fechaCompra | date:'dd/MM/yyyy' }}</span>
       <span>{{ fila.proveedorNombre }}</span>
-      <span>{{ fila.productoNombre }}</span>
-      <span>{{ fila.cantidad }}</span>
-      <span>S/ {{ fila.subtotal }}</span>
+      <span>{{ fila.cantidadEquipos }}</span>
+      <span>S/ {{ fila.total | number:'1.2-2' }}</span>
       <span class="row-actions">
         <button class="icon green" (click)="verDetalle(fila)">Ver</button>
-        <button class="icon blue" (click)="verImeis(fila)">IMEI</button>
         <button class="icon yellow" (click)="imprimirFila(fila)">PDF</button>
       </span>
     </div>
@@ -110,36 +107,35 @@
       <p><strong>Codigo compra</strong> <span>{{ selected?.codigoCompra }}</span></p>
       <p><strong>Proveedor</strong> <span>{{ selected?.proveedorNombre }}</span></p>
       <p><strong>Fecha</strong> <span>{{ selected?.fechaCompra | date:'short' }}</span></p>
-      <p><strong>Producto</strong> <span>{{ selected?.productoNombre }}</span></p>
-      <p><strong>Total de equipos</strong> <span>{{ selected?.cantidad }}</span></p>
-      <p><strong>IMEI ingresados</strong> <span>{{ selected?.imeis?.length || 0 }}</span></p>
-      <p><strong>Monto total</strong> <span>S/ {{ selected?.subtotal }}</span></p>
-      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
-    </div>
-  </div>
+      <p><strong>Monto total</strong> <span>S/ {{ selected?.total | number:'1.2-2' }}</span></p>
 
-  <div class="modal-backdrop" *ngIf="imeiModal">
-    <div class="modal-card detail-card">
-      <button class="modal-close" type="button" (click)="imeiModal = false" aria-label="Cerrar">X</button>
-      <h3>IMEI registrados</h3>
+      <h3 class="detail-subtitle">Equipos ingresados en esta compra</h3>
+      <input class="imei-search" type="text" [(ngModel)]="busquedaImei"
+             placeholder="Buscar por IMEI o producto...">
+
       <div class="mini-list">
-        <div class="mini-item imei-item" *ngFor="let imei of selected?.imeis">
+        <div class="mini-item imei-item report-line" *ngFor="let equipo of equiposDetalle; let i = index">
+          <div class="detail-line-number">{{ i + 1 }}</div>
           <div>
             <small>Modelo</small>
-            <span>{{ selected?.productoNombre }}</span>
+            <span>{{ equipo.productoNombre }}</span>
           </div>
           <div>
             <small>IMEI</small>
-            <span>{{ imei.numero }}</span>
+            <span>{{ equipo.imeiNumero }}</span>
           </div>
-          <b class="badge" [ngClass]="imei.estado === 'VENDIDO' ? 'danger' : 'success'">{{ imei.estado }}</b>
+          <div>
+            <small>Precio</small>
+            <span>S/ {{ equipo.precioUnitario }}</span>
+          </div>
+          <b class="badge" [ngClass]="equipo.estado === 'VENDIDO' ? 'danger' : 'success'">{{ equipo.estado }}</b>
         </div>
       </div>
-      <p *ngIf="!selected?.imeis?.length">
-        <strong>Sin IMEI</strong>
-        <span>Esta compra no tiene IMEI registrados.</span>
+      <p *ngIf="!equiposDetalle.length" class="empty-state">
+        No se encontraron equipos con ese criterio.
       </p>
-      <button class="primary-btn" (click)="imeiModal = false">Cerrar</button>
+
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
     </div>
   </div>
 </section>

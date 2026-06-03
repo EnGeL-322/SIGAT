@@ -8,88 +8,93 @@
   <nav class="menu">
     <div class="menu-group">
       <div class="menu-heading">
-        <span class="menu-index">01</span>
-        <img class="menu-heading-icon" src="assets/icons/icon-operaciones.png" alt="">
+        <span class="heading-icon"><img src="assets/icons/icon-operaciones.png" alt=""></span>
         <h4>Operaciones</h4>
+        <span class="menu-index">01</span>
       </div>
       <a routerLink="/compras" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-compras.png" alt="">
-        <span>Compras</span>
+        <span class="link-icon"><img src="assets/icons/icon-compras.png" alt=""></span>
+        <span class="link-text">Compras</span>
       </a>
       <a routerLink="/ventas" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-ventas.png" alt="">
-        <span>Ventas</span>
+        <span class="link-icon"><img src="assets/icons/icon-ventas.png" alt=""></span>
+        <span class="link-text">Ventas</span>
       </a>
     </div>
 
     <div class="menu-group">
       <div class="menu-heading">
-        <span class="menu-index">02</span>
-        <img class="menu-heading-icon" src="assets/icons/icon-maestros.png" alt="">
+        <span class="heading-icon"><img src="assets/icons/icon-maestros.png" alt=""></span>
         <h4>Maestros</h4>
+        <span class="menu-index">02</span>
       </div>
       <a routerLink="/productos" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-productos.png" alt="">
-        <span>Producto</span>
+        <span class="link-icon"><img src="assets/icons/icon-productos.png" alt=""></span>
+        <span class="link-text">Producto</span>
       </a>
       <a routerLink="/proveedores" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-proveedores.png" alt="">
-        <span>Proveedores</span>
+        <span class="link-icon"><img src="assets/icons/icon-proveedores.png" alt=""></span>
+        <span class="link-text">Proveedores</span>
       </a>
       <a routerLink="/clientes" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-clientes.png" alt="">
-        <span>Clientes</span>
+        <span class="link-icon"><img src="assets/icons/icon-clientes.png" alt=""></span>
+        <span class="link-text">Clientes</span>
       </a>
     </div>
 
     <div class="menu-group">
       <div class="menu-heading">
-        <span class="menu-index">03</span>
-        <img class="menu-heading-icon" src="assets/icons/icon-inventario.png" alt="">
+        <span class="heading-icon"><img src="assets/icons/icon-inventario.png" alt=""></span>
         <h4>Inventario</h4>
+        <span class="menu-index">03</span>
       </div>
       <a routerLink="/inventario" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-stock.png" alt="">
-        <span>Stock general</span>
+        <span class="link-icon"><img src="assets/icons/icon-stock.png" alt=""></span>
+        <span class="link-text">Stock general</span>
       </a>
     </div>
 
     <div class="menu-group">
       <div class="menu-heading">
-        <span class="menu-index">04</span>
-        <img class="menu-heading-icon" src="assets/icons/icon-reportes.png" alt="">
+        <span class="heading-icon"><img src="assets/icons/icon-reportes.png" alt=""></span>
         <h4>Reportes</h4>
+        <span class="menu-index">04</span>
       </div>
       <a routerLink="/reportes/ventas" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-ventas.png" alt="">
-        <span>Reporte ventas</span>
+        <span class="link-icon"><img src="assets/icons/icon-ventas.png" alt=""></span>
+        <span class="link-text">Reporte ventas</span>
       </a>
       <a routerLink="/reportes/compras" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-compras.png" alt="">
-        <span>Reporte compras</span>
+        <span class="link-icon"><img src="assets/icons/icon-compras.png" alt=""></span>
+        <span class="link-text">Reporte compras</span>
       </a>
       <a routerLink="/reportes/bajo-stock" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-bajo-stock.png" alt="">
-        <span>Bajo stock</span>
+        <span class="link-icon"><img src="assets/icons/icon-bajo-stock.png" alt=""></span>
+        <span class="link-text">Bajo stock</span>
       </a>
     </div>
 
     <div class="menu-group" *ngIf="isAdmin">
       <div class="menu-heading">
-        <span class="menu-index">05</span>
-        <img class="menu-heading-icon" src="assets/icons/icon-seguridad.png" alt="">
+        <span class="heading-icon"><img src="assets/icons/icon-seguridad.png" alt=""></span>
         <h4>Seguridad</h4>
+        <span class="menu-index">05</span>
       </div>
       <a routerLink="/usuarios" routerLinkActive="active-link">
-        <img class="menu-link-icon" src="assets/icons/icon-seguridad.png" alt="">
-        <span>Usuarios</span>
+        <span class="link-icon"><img src="assets/icons/icon-seguridad.png" alt=""></span>
+        <span class="link-text">Usuarios</span>
       </a>
     </div>
   </nav>
 
   <div class="logout-area">
     <button type="button" class="logout-btn" (click)="logout()">
-      Cerrar sesion
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span>Cerrar sesion</span>
     </button>
   </div>
 </aside>

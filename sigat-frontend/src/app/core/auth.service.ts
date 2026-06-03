@@ -46,6 +46,18 @@ export class AuthService {
     );
   }
 
+  loginWithFacebook(accessToken: string) {
+    return this.api.loginFacebook(accessToken).pipe(
+      tap((response: any) => {
+        if (response?.exito) {
+          localStorage.setItem(this.tokenKey, response.datos.token);
+          localStorage.setItem(this.userKey, JSON.stringify(response.datos));
+          this.userSubject.next(response.datos);
+        }
+      })
+    );
+  }
+
   requestPasswordReset(email: string) {
     return this.api.solicitarCodigoPassword(email);
   }

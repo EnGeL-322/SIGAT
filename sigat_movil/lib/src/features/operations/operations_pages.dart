@@ -185,78 +185,13 @@ class _MovementListPageState extends State<MovementListPage> {
   }
 
   Future<void> _showDetails(Map<String, dynamic> item) async {
-    final id = item['id'];
-    final future = SessionScope.read(
-      context,
-    ).api.list('${widget.type.detailPath}/$id/detalles');
-
+    final api = SessionScope.read(context).api;
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(18),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.72,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Detalle ${widget.type.singular}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: FutureBuilder<List<Map<String, dynamic>>>(
-                    future: future,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        return EmptyState(
-                          message: snapshot.error.toString(),
-                          icon: Icons.error_outline,
-                        );
-                      }
-                      final details = snapshot.data ?? const [];
-                      if (details.isEmpty) {
-                        return const EmptyState(message: 'Sin detalles');
-                      }
-                      return ListView.separated(
-                        itemCount: details.length,
-                        separatorBuilder: (_, _) => const Divider(),
-                        itemBuilder: (context, index) {
-                          final detail = details[index];
-                          final imeiNumero = detail['imeiNumero']?.toString();
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              detail['productoNombre']?.toString() ?? '',
-                            ),
-                            subtitle: Text(
-                              'Cantidad: ${detail['cantidad'] ?? 1} - Precio: ${formatMoney(detail['precioUnitario'])}'
-                              '${imeiNumero == null || imeiNumero.isEmpty ? '' : '\nIMEI vendido: $imeiNumero'}',
-                            ),
-                            trailing: Text(formatMoney(detail['subtotal'])),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cerrar'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) =>
+          _MovementDetailSheet(type: widget.type, item: item, api: api),
     );
   }
 
@@ -383,6 +318,8 @@ class _MovementFormPageState extends State<MovementFormPage> {
                         }
                       }),
                     ),
+                    if (_productId != null && _selectedProduct != null)
+                      _stockBadge(),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -585,6 +522,293 @@ class _MovementFormPageState extends State<MovementFormPage> {
   String _partyName(Map<String, dynamic> party) {
     if (widget.type.isPurchase) return party['nombre']?.toString() ?? '';
     return '${party['nombre'] ?? ''} ${party['apellido'] ?? ''}'.trim();
+  }
+
+  Widget _stockBadge() {
+    final stock = _asNum(_selectedProduct?['stockActual']).toInt();
+    final color = stock <= 0
+        ? AppTheme.rose
+        : (stock <= 5 ? const Color(0xFFB7791F) : const Color(0xFF14804A));
+    final text = stock <= 0
+        ? 'Sin stock disponible'
+        : 'Quedan $stock dispositivo(s)';
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                text,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Hoja de detalle de una compra/venta con buscador por IMEI o producto.
+class _MovementDetailSheet extends StatefulWidget {
+  const _MovementDetailSheet({
+    required this.type,
+    required this.item,
+    required this.api,
+  });
+
+  final MovementType type;
+  final Map<String, dynamic> item;
+  final ApiClient api;
+
+  @override
+  State<_MovementDetailSheet> createState() => _MovementDetailSheetState();
+}
+
+class _MovementDetailSheetState extends State<_MovementDetailSheet> {
+  final _searchController = TextEditingController();
+  List<Map<String, dynamic>> _details = [];
+  bool _loading = true;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final id = widget.item['id'];
+      final details = await widget.api.list(
+        '${widget.type.detailPath}/$id/detalles',
+      );
+      if (mounted) {
+        setState(() {
+          _details = details;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error.message;
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _details;
+    return _details.where((detail) {
+      final producto = (detail['productoNombre']?.toString() ?? '')
+          .toLowerCase();
+      if (producto.contains(query)) return true;
+
+      final imeiVenta = (detail['imeiNumero']?.toString() ?? '').toLowerCase();
+      if (imeiVenta.contains(query)) return true;
+
+      final imeis = detail['imeis'];
+      if (imeis is List) {
+        return imeis.any(
+          (imei) =>
+              imei is Map &&
+              (imei['numero']?.toString() ?? '').toLowerCase().contains(query),
+        );
+      }
+      return false;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = widget.type;
+    final filtered = _filtered;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        top: 18,
+        bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.78,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Detalle ${type.singular}',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            Text('${type.partyLabel}: ${widget.item[type.partyKey] ?? '-'}'),
+            Text('Total: ${formatMoney(widget.item['total'])}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Buscar por IMEI o producto',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error.isNotEmpty
+                  ? EmptyState(message: _error, icon: Icons.error_outline)
+                  : filtered.isEmpty
+                  ? const EmptyState(message: 'Sin resultados')
+                  : ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final detail = filtered[index];
+                        return type.isPurchase
+                            ? _PurchaseDetailTile(
+                                detail: detail,
+                                search: _searchController.text.trim(),
+                              )
+                            : _SaleDetailTile(detail: detail);
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Item de compra: muestra el producto y la lista de IMEIs generados.
+class _PurchaseDetailTile extends StatelessWidget {
+  const _PurchaseDetailTile({required this.detail, required this.search});
+
+  final Map<String, dynamic> detail;
+  final String search;
+
+  @override
+  Widget build(BuildContext context) {
+    final imeis = detail['imeis'] is List
+        ? (detail['imeis'] as List)
+        : const [];
+    final query = search.toLowerCase();
+    final visibles = query.isEmpty
+        ? imeis
+        : imeis
+              .where(
+                (imei) =>
+                    imei is Map &&
+                    (imei['numero']?.toString() ?? '').toLowerCase().contains(
+                      query,
+                    ),
+              )
+              .toList();
+
+    return SigatCard(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(bottom: 6),
+          initiallyExpanded: query.isNotEmpty,
+          title: Text(detail['productoNombre']?.toString() ?? ''),
+          subtitle: Text(
+            'Cantidad: ${detail['cantidad'] ?? 0} - ${formatMoney(detail['precioUnitario'])}\n'
+            'IMEIs: ${imeis.length}',
+          ),
+          trailing: const Icon(Icons.phone_android),
+          children: [
+            for (final imei in visibles)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.smartphone_outlined, size: 18),
+                title: Text(imei is Map ? (imei['numero']?.toString() ?? '') : ''),
+                trailing: StatusChip(
+                  label: imei is Map
+                      ? (imei['estado']?.toString() ?? 'EN_STOCK')
+                      : 'EN_STOCK',
+                  color: _imeiColor(imei is Map ? imei['estado']?.toString() : null),
+                ),
+              ),
+            if (visibles.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Sin IMEIs para este criterio'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Item de venta: muestra el producto y el IMEI vendido.
+class _SaleDetailTile extends StatelessWidget {
+  const _SaleDetailTile({required this.detail});
+
+  final Map<String, dynamic> detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final imei = detail['imeiNumero']?.toString();
+    return SigatCard(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.smartphone_outlined),
+        title: Text(detail['productoNombre']?.toString() ?? ''),
+        subtitle: Text(
+          'IMEI: ${imei == null || imei.isEmpty ? 'Automatico' : imei}\n'
+          'Cantidad: ${detail['cantidad'] ?? 1}',
+        ),
+        trailing: Text(
+          formatMoney(detail['precioUnitario'] ?? detail['subtotal']),
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+Color _imeiColor(String? estado) {
+  switch (estado) {
+    case 'VENDIDO':
+      return const Color(0xFFB7791F);
+    case 'DEFECTUOSO':
+      return AppTheme.rose;
+    default:
+      return const Color(0xFF14804A);
   }
 }
 

@@ -76,6 +76,13 @@ const sigatMenuItems = <SigatMenuItem>[
     keywords: ['reporte', 'reportes', 'venta', 'ventas'],
   ),
   SigatMenuItem(
+    label: 'Reporte compras',
+    group: 'Reportes',
+    route: '/reportes/compras',
+    icon: Icons.shopping_bag_outlined,
+    keywords: ['reporte', 'reportes', 'compra', 'compras', 'proveedor'],
+  ),
+  SigatMenuItem(
     label: 'Bajo stock',
     group: 'Reportes',
     route: '/reportes/bajo-stock',

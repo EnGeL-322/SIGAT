@@ -7,7 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthConfigDTO {
-    private String googleClientId;
-    private String facebookAppId;
+public class FacebookLoginRequestDTO {
+    private String accessToken;
 }

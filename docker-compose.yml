@@ -28,6 +28,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sigat_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 123456
+      # Correo para recuperacion de contrasena (opcional).
+      # Si los dejas vacios, el codigo aparece en los logs (modo gratis).
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      # Login social (opcional). IDs gratuitos de Google / Facebook.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
     depends_on:
       mysql:
         condition: service_healthy

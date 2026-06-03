@@ -2,7 +2,7 @@
   position: relative;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   overflow: hidden;
   background:
     linear-gradient(135deg, rgba(16, 23, 34, 0.88) 0%, rgba(30, 58, 88, 0.72) 42%, rgba(228, 239, 245, 0.94) 100%),

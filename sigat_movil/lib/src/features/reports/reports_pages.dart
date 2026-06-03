@@ -40,8 +40,15 @@ class _SalesReportPageState extends State<SalesReportPage> {
     return _rows.where((row) {
       final matchesClient =
           _clientId == null || _asInt(row['clienteId']) == _clientId;
+      final detalles = row['detalles'] is List
+          ? row['detalles'] as List
+          : const [];
       final matchesProduct =
-          _productId == null || _asInt(row['productoId']) == _productId;
+          _productId == null ||
+          detalles.any(
+            (detail) =>
+                detail is Map && _asInt(detail['productoId']) == _productId,
+          );
       final matchesPeriod = _isInPeriod(row['fechaVenta']?.toString());
       return matchesClient && matchesProduct && matchesPeriod;
     }).toList();
@@ -100,16 +107,17 @@ class _SalesReportPageState extends State<SalesReportPage> {
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              row['productoNombre']?.toString() ?? '',
+                              row['codigoVenta']?.toString() ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                             subtitle: Text(
-                              '${row['codigoVenta'] ?? ''} - ${formatDate(row['fechaVenta'])}\n'
-                              '${row['clienteNombre'] ?? ''} - IMEI ${row['imeiNumero'] ?? '-'}',
+                              '${formatDate(row['fechaVenta'])} - ${row['clienteNombre'] ?? ''}\n'
+                              'Equipos: ${row['cantidadEquipos'] ?? 0}',
                             ),
                             trailing: Text(
-                              formatMoney(
-                                row['precioUnitario'] ?? row['subtotal'],
-                              ),
+                              formatMoney(row['total']),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                               ),
@@ -141,26 +149,34 @@ class _SalesReportPageState extends State<SalesReportPage> {
         api.list('/productos'),
       ]);
       final sales = result[0];
-      final detailGroups = await Future.wait(
+      final rows = await Future.wait(
         sales.map((sale) async {
           final details = await api.list('/ventas/${sale['id']}/detalles');
-          return details.map((detail) {
-            return {
-              ...detail,
-              'ventaId': sale['id'],
-              'codigoVenta': sale['numeroVenta'],
-              'fechaVenta': sale['fechaVenta'],
-              'clienteId': sale['clienteId'],
-              'clienteNombre': sale['clienteNombre'],
-            };
-          }).toList();
+          final total =
+              sale['total'] ??
+              details.fold<num>(
+                0,
+                (sum, detail) =>
+                    sum + _asNum(detail['subtotal'] ?? detail['precioUnitario']),
+              );
+          return <String, dynamic>{
+            'id': sale['id'],
+            'codigoVenta': sale['numeroVenta'],
+            'fechaVenta': sale['fechaVenta'],
+            'clienteId': sale['clienteId'],
+            'clienteNombre': sale['clienteNombre'],
+            'vendedorNombre': sale['vendedorNombre'] ?? 'SIGAT',
+            'total': total,
+            'detalles': details,
+            'cantidadEquipos': details.length,
+          };
         }),
       );
       if (!mounted) return;
       setState(() {
         _clients = result[1];
         _products = result[2];
-        _rows = detailGroups.expand((rows) => rows).toList();
+        _rows = rows;
       });
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
@@ -193,15 +209,22 @@ class _SalesReportPageState extends State<SalesReportPage> {
 
   Future<void> _copyCsv(List<Map<String, dynamic>> rows) async {
     final csv = [
-      'Codigo;Fecha;Cliente;Producto;IMEI;Precio',
+      'Codigo;Fecha;Cliente;Equipos;Total;IMEIs',
       ...rows.map((row) {
+        final detalles = row['detalles'] is List
+            ? row['detalles'] as List
+            : const [];
+        final imeis = detalles
+            .map((detail) => detail is Map ? detail['imeiNumero'] : null)
+            .where((imei) => imei != null && imei.toString().isNotEmpty)
+            .join(',');
         return [
           row['codigoVenta'] ?? '',
           formatDate(row['fechaVenta']),
           row['clienteNombre'] ?? '',
-          row['productoNombre'] ?? '',
-          row['imeiNumero'] ?? '',
-          row['precioUnitario'] ?? row['subtotal'] ?? '',
+          row['cantidadEquipos'] ?? 0,
+          row['total'] ?? '',
+          imeis,
         ].join(';');
       }),
     ].join('\n');
@@ -216,32 +239,259 @@ class _SalesReportPageState extends State<SalesReportPage> {
     showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(18),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Text(
-              'Detalle de venta',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 12),
-            _Line('Codigo', row['codigoVenta']),
-            _Line('Fecha', formatDate(row['fechaVenta'])),
-            _Line('Cliente', row['clienteNombre']),
-            _Line('Producto', row['productoNombre']),
-            _Line('IMEI', row['imeiNumero']),
-            _Line('Precio', formatMoney(row['precioUnitario'])),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cerrar'),
-            ),
-          ],
+      isScrollControlled: true,
+      builder: (context) => _SaleReportDetailSheet(row: row),
+    );
+  }
+}
+
+class PurchasesReportPage extends StatefulWidget {
+  const PurchasesReportPage({super.key});
+
+  @override
+  State<PurchasesReportPage> createState() => _PurchasesReportPageState();
+}
+
+class _PurchasesReportPageState extends State<PurchasesReportPage> {
+  final _dateController = TextEditingController();
+  List<Map<String, dynamic>> _providers = [];
+  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _rows = [];
+  int? _providerId;
+  int? _productId;
+  String _period = 'DIA';
+  bool _loading = true;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    return _rows.where((row) {
+      final matchesProvider =
+          _providerId == null || _asInt(row['proveedorId']) == _providerId;
+      final detalles = row['detalles'] is List
+          ? row['detalles'] as List
+          : const [];
+      final matchesProduct =
+          _productId == null ||
+          detalles.any(
+            (detail) =>
+                detail is Map && _asInt(detail['productoId']) == _productId,
+          );
+      final matchesPeriod = _isInPeriod(row['fechaCompra']?.toString());
+      return matchesProvider && matchesProduct && matchesPeriod;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filtered;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ModuleHeader(
+          eyebrow: 'Reportes',
+          title: 'Reporte compras',
+          trailing: IconButton.filledTonal(
+            onPressed: filtered.isEmpty ? null : () => _copyCsv(filtered),
+            icon: const Icon(Icons.copy_outlined),
+            tooltip: 'Copiar CSV',
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        ErrorBanner(message: _error),
+        _PurchaseReportFilters(
+          dateController: _dateController,
+          period: _period,
+          onPeriodChanged: (value) => setState(() => _period = value),
+          providers: _providers,
+          products: _products,
+          providerId: _providerId,
+          productId: _productId,
+          onProviderChanged: (value) => setState(() => _providerId = value),
+          onProductChanged: (value) => setState(() => _productId = value),
+          onDateChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(
+                        height: 220,
+                        child: EmptyState(message: 'Sin compras'),
+                      ),
+                    ],
+                  )
+                : ListView(
+                    children: [
+                      _PurchasesSummary(rows: filtered),
+                      const SizedBox(height: 10),
+                      for (final row in filtered) ...[
+                        SigatCard(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              row['codigoCompra']?.toString() ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${formatDate(row['fechaCompra'])} - ${row['proveedorNombre'] ?? ''}\n'
+                              'Equipos: ${row['cantidadEquipos'] ?? 0}',
+                            ),
+                            trailing: Text(
+                              formatMoney(row['total']),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            onTap: () => _showRow(row),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+
+    try {
+      final api = SessionScope.read(context).api;
+      final result = await Future.wait([
+        api.list('/compras'),
+        api.list('/proveedores'),
+        api.list('/productos'),
+      ]);
+      final purchases = result[0];
+      final rows = await Future.wait(
+        purchases.map((purchase) async {
+          final details = await api.list('/compras/${purchase['id']}/detalles');
+          final total =
+              purchase['total'] ??
+              details.fold<num>(
+                0,
+                (sum, detail) => sum + _asNum(detail['subtotal']),
+              );
+          final equipos = details.fold<num>(
+            0,
+            (sum, detail) => sum + _asNum(detail['cantidad']),
+          );
+          final imeis = details.fold<int>(0, (sum, detail) {
+            final list = detail['imeis'];
+            return sum + (list is List ? list.length : 0);
+          });
+          return <String, dynamic>{
+            'id': purchase['id'],
+            'codigoCompra': purchase['numeroCompra'],
+            'fechaCompra': purchase['fechaCompra'],
+            'proveedorId': purchase['proveedorId'],
+            'proveedorNombre': purchase['proveedorNombre'],
+            'total': total,
+            'detalles': details,
+            'cantidadEquipos': equipos.toInt(),
+            'totalImeis': imeis,
+          };
+        }),
+      );
+      if (!mounted) return;
+      setState(() {
+        _providers = result[1];
+        _products = result[2];
+        _rows = rows;
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  bool _isInPeriod(String? value) {
+    if (_dateController.text.trim().isEmpty || value == null) return true;
+    final base = DateTime.tryParse('${_dateController.text.trim()}T00:00:00');
+    final target = DateTime.tryParse(value);
+    if (base == null || target == null) return false;
+
+    if (_period == 'DIA') {
+      return target.year == base.year &&
+          target.month == base.month &&
+          target.day == base.day;
+    }
+
+    if (_period == 'SEMANA') {
+      final start = base.subtract(Duration(days: base.weekday - 1));
+      final end = start.add(const Duration(days: 7));
+      return target.isAfter(start.subtract(const Duration(milliseconds: 1))) &&
+          target.isBefore(end);
+    }
+
+    return target.year == base.year && target.month == base.month;
+  }
+
+  Future<void> _copyCsv(List<Map<String, dynamic>> rows) async {
+    final csv = [
+      'Codigo;Fecha;Proveedor;Equipos;Total;IMEIs',
+      ...rows.map((row) {
+        final detalles = row['detalles'] is List
+            ? row['detalles'] as List
+            : const [];
+        final imeis = detalles
+            .expand(
+              (detail) => detail is Map && detail['imeis'] is List
+                  ? (detail['imeis'] as List)
+                  : const [],
+            )
+            .map((imei) => imei is Map ? imei['numero'] : null)
+            .where((numero) => numero != null)
+            .join(',');
+        return [
+          row['codigoCompra'] ?? '',
+          formatDate(row['fechaCompra']),
+          row['proveedorNombre'] ?? '',
+          row['cantidadEquipos'] ?? 0,
+          row['total'] ?? '',
+          imeis,
+        ].join(';');
+      }),
+    ].join('\n');
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('CSV copiado')));
+  }
+
+  void _showRow(Map<String, dynamic> row) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => _PurchaseReportDetailSheet(row: row),
     );
   }
 }
@@ -567,11 +817,12 @@ class _SalesSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = rows.fold<num>(
+    final total = rows.fold<num>(0, (sum, row) => sum + _asNum(row['total']));
+    final equipos = rows.fold<num>(
       0,
-      (sum, row) => sum + _asNum(row['precioUnitario'] ?? row['subtotal']),
+      (sum, row) => sum + _asNum(row['cantidadEquipos']),
     );
-    final sales = rows.map((row) => row['ventaId']).toSet().length;
+    final sales = rows.length;
     return SigatCard(
       child: Row(
         children: [
@@ -585,7 +836,7 @@ class _SalesSummary extends StatelessWidget {
           Expanded(
             child: _SummaryItem(
               label: 'Equipos',
-              value: rows.length.toString(),
+              value: equipos.toInt().toString(),
               icon: Icons.phone_android,
             ),
           ),
@@ -623,6 +874,421 @@ class _SummaryItem extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.labelMedium),
       ],
     );
+  }
+}
+
+/// Detalle de una venta del reporte con buscador por IMEI o producto.
+class _SaleReportDetailSheet extends StatefulWidget {
+  const _SaleReportDetailSheet({required this.row});
+
+  final Map<String, dynamic> row;
+
+  @override
+  State<_SaleReportDetailSheet> createState() => _SaleReportDetailSheetState();
+}
+
+class _SaleReportDetailSheetState extends State<_SaleReportDetailSheet> {
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _equipos {
+    final detalles = widget.row['detalles'] is List
+        ? widget.row['detalles'] as List
+        : const [];
+    final all = detalles
+        .whereType<Map>()
+        .map((detail) => Map<String, dynamic>.from(detail))
+        .toList();
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return all;
+    return all.where((detail) {
+      final imei = (detail['imeiNumero']?.toString() ?? '').toLowerCase();
+      final producto = (detail['productoNombre']?.toString() ?? '')
+          .toLowerCase();
+      return imei.contains(query) || producto.contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final row = widget.row;
+    final equipos = _equipos;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        top: 18,
+        bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.78,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Detalle de venta',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            _Line('Codigo', row['codigoVenta']),
+            _Line('Cliente', row['clienteNombre']),
+            _Line('Vendedor', row['vendedorNombre']),
+            _Line('Total', formatMoney(row['total'])),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Buscar por IMEI o producto',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: equipos.isEmpty
+                  ? const EmptyState(message: 'Sin resultados')
+                  : ListView.separated(
+                      itemCount: equipos.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final equipo = equipos[index];
+                        final imei = equipo['imeiNumero']?.toString();
+                        return SigatCard(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.smartphone_outlined),
+                            title: Text(
+                              equipo['productoNombre']?.toString() ?? '',
+                            ),
+                            subtitle: Text(
+                              'IMEI: ${imei == null || imei.isEmpty ? 'Automatico' : imei}',
+                            ),
+                            trailing: Text(
+                              formatMoney(
+                                equipo['precioUnitario'] ?? equipo['subtotal'],
+                              ),
+                              style: const TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseReportFilters extends StatelessWidget {
+  const _PurchaseReportFilters({
+    required this.dateController,
+    required this.period,
+    required this.onPeriodChanged,
+    required this.providers,
+    required this.products,
+    required this.providerId,
+    required this.productId,
+    required this.onProviderChanged,
+    required this.onProductChanged,
+    required this.onDateChanged,
+  });
+
+  final TextEditingController dateController;
+  final String period;
+  final ValueChanged<String> onPeriodChanged;
+  final List<Map<String, dynamic>> providers;
+  final List<Map<String, dynamic>> products;
+  final int? providerId;
+  final int? productId;
+  final ValueChanged<int?> onProviderChanged;
+  final ValueChanged<int?> onProductChanged;
+  final VoidCallback onDateChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SigatCard(
+      child: Column(
+        children: [
+          TextField(
+            controller: dateController,
+            readOnly: true,
+            decoration: const InputDecoration(
+              labelText: 'Fecha',
+              prefixIcon: Icon(Icons.calendar_today_outlined),
+            ),
+            onTap: () async {
+              final selected = await showDatePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+                initialDate: DateTime.now(),
+              );
+              if (selected == null) return;
+              dateController.text =
+                  '${selected.year}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+              onDateChanged();
+            },
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'DIA', label: Text('Dia')),
+              ButtonSegment(value: 'SEMANA', label: Text('Semana')),
+              ButtonSegment(value: 'MES', label: Text('Mes')),
+            ],
+            selected: {period},
+            onSelectionChanged: (value) => onPeriodChanged(value.first),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int?>(
+            initialValue: providerId,
+            decoration: const InputDecoration(labelText: 'Proveedor'),
+            items: [
+              const DropdownMenuItem<int?>(value: null, child: Text('Todos')),
+              ...providers.map((provider) {
+                return DropdownMenuItem<int?>(
+                  value: _asInt(provider['id']),
+                  child: Text(provider['nombre']?.toString() ?? ''),
+                );
+              }),
+            ],
+            onChanged: onProviderChanged,
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int?>(
+            initialValue: productId,
+            decoration: const InputDecoration(labelText: 'Producto'),
+            items: [
+              const DropdownMenuItem<int?>(value: null, child: Text('Todos')),
+              ...products.map((product) {
+                return DropdownMenuItem<int?>(
+                  value: _asInt(product['id']),
+                  child: Text(
+                    '${product['marca'] ?? ''} ${product['modelo'] ?? product['nombre'] ?? ''}'
+                        .trim(),
+                  ),
+                );
+              }),
+            ],
+            onChanged: onProductChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PurchasesSummary extends StatelessWidget {
+  const _PurchasesSummary({required this.rows});
+
+  final List<Map<String, dynamic>> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = rows.fold<num>(0, (sum, row) => sum + _asNum(row['total']));
+    final equipos = rows.fold<num>(
+      0,
+      (sum, row) => sum + _asNum(row['cantidadEquipos']),
+    );
+    final imeis = rows.fold<num>(
+      0,
+      (sum, row) => sum + _asNum(row['totalImeis']),
+    );
+    return SigatCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: _SummaryItem(
+              label: 'Total',
+              value: formatMoney(total),
+              icon: Icons.payments_outlined,
+            ),
+          ),
+          Expanded(
+            child: _SummaryItem(
+              label: 'Equipos',
+              value: equipos.toInt().toString(),
+              icon: Icons.phone_android,
+            ),
+          ),
+          Expanded(
+            child: _SummaryItem(
+              label: 'Compras',
+              value: rows.length.toString(),
+              icon: Icons.shopping_bag_outlined,
+            ),
+          ),
+          Expanded(
+            child: _SummaryItem(
+              label: 'IMEIs',
+              value: imeis.toInt().toString(),
+              icon: Icons.qr_code_2_outlined,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Detalle de una compra del reporte: equipos (IMEIs) con buscador.
+class _PurchaseReportDetailSheet extends StatefulWidget {
+  const _PurchaseReportDetailSheet({required this.row});
+
+  final Map<String, dynamic> row;
+
+  @override
+  State<_PurchaseReportDetailSheet> createState() =>
+      _PurchaseReportDetailSheetState();
+}
+
+class _PurchaseReportDetailSheetState
+    extends State<_PurchaseReportDetailSheet> {
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _equipos {
+    final detalles = widget.row['detalles'] is List
+        ? widget.row['detalles'] as List
+        : const [];
+    final equipos = <Map<String, dynamic>>[];
+    for (final detalle in detalles) {
+      if (detalle is! Map) continue;
+      final imeis = detalle['imeis'];
+      if (imeis is! List) continue;
+      for (final imei in imeis) {
+        if (imei is! Map) continue;
+        equipos.add({
+          'productoNombre': detalle['productoNombre'],
+          'numero': imei['numero'],
+          'estado': imei['estado'],
+          'precioUnitario': detalle['precioUnitario'],
+        });
+      }
+    }
+
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return equipos;
+    return equipos.where((equipo) {
+      final numero = (equipo['numero']?.toString() ?? '').toLowerCase();
+      final producto = (equipo['productoNombre']?.toString() ?? '')
+          .toLowerCase();
+      return numero.contains(query) || producto.contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final row = widget.row;
+    final equipos = _equipos;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        top: 18,
+        bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.78,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Detalle de compra',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            _Line('Codigo', row['codigoCompra']),
+            _Line('Proveedor', row['proveedorNombre']),
+            _Line('Total', formatMoney(row['total'])),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Buscar por IMEI o producto',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: equipos.isEmpty
+                  ? const EmptyState(message: 'Sin resultados')
+                  : ListView.separated(
+                      itemCount: equipos.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final equipo = equipos[index];
+                        return SigatCard(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.smartphone_outlined),
+                            title: Text(
+                              equipo['numero']?.toString() ?? '',
+                            ),
+                            subtitle: Text(
+                              equipo['productoNombre']?.toString() ?? '',
+                            ),
+                            trailing: StatusChip(
+                              label: equipo['estado']?.toString() ?? 'EN_STOCK',
+                              color: _imeiColor(equipo['estado']?.toString()),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Color _imeiColor(String? estado) {
+  switch (estado) {
+    case 'VENDIDO':
+      return const Color(0xFFB7791F);
+    case 'DEFECTUOSO':
+      return AppTheme.rose;
+    default:
+      return const Color(0xFF14804A);
   }
 }
 

@@ -125,6 +125,10 @@ class _SigatAppState extends State<SigatApp> {
         _shell(route, 'Reporte ventas', const SalesReportPage()),
         name: route,
       ),
+      '/reportes/compras' => _page(
+        _shell(route, 'Reporte compras', const PurchasesReportPage()),
+        name: route,
+      ),
       '/reportes/bajo-stock' => _page(
         _shell(route, 'Bajo stock', const LowStockReportPage()),
         name: route,

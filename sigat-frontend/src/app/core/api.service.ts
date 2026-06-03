@@ -26,6 +26,10 @@ export class ApiService {
     return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/google`, { idToken }));
   }
 
+  loginFacebook(accessToken: string): Observable<any> {
+    return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/facebook`, { accessToken }));
+  }
+
   solicitarCodigoPassword(email: string): Observable<any> {
     return this.refreshAfter(this.http.post(`${this.apiUrl}/auth/forgot-password`, { email }));
   }

@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth.service';
 
 declare const google: any;
+declare const FB: any;
 
 @Component({
   selector: 'app-register',
@@ -18,8 +19,10 @@ export class RegisterComponent implements OnInit {
   error = '';
   success = '';
   googleClientId = '';
+  facebookAppId = '';
   googleConfigLoaded = false;
   private googleReady = false;
+  private facebookReady = false;
   registerForm: FormGroup;
 
   constructor(
@@ -44,6 +47,7 @@ export class RegisterComponent implements OnInit {
     this.authService.getAuthConfig().subscribe({
       next: (res: any) => {
         this.googleClientId = res?.datos?.googleClientId || '';
+        this.facebookAppId = res?.datos?.facebookAppId || '';
         this.googleConfigLoaded = true;
       },
       error: () => {
@@ -54,6 +58,10 @@ export class RegisterComponent implements OnInit {
 
   get googleConfigured(): boolean {
     return !!this.googleClientId;
+  }
+
+  get facebookConfigured(): boolean {
+    return !!this.facebookAppId;
   }
 
   passwordsMatch(group: AbstractControl) {
@@ -141,6 +149,81 @@ export class RegisterComponent implements OnInit {
         this.loading = false;
         this.error = err?.error?.mensaje || 'No se pudo iniciar sesion con Google';
       }
+    });
+  }
+
+  onFacebookRegister(): void {
+    this.error = '';
+    this.success = '';
+
+    if (!this.facebookAppId) {
+      return;
+    }
+
+    this.loadFacebookSdk()
+      .then(() => {
+        FB.login(
+          (response: any) => this.zone.run(() => {
+            const token = response?.authResponse?.accessToken;
+            if (token) {
+              this.handleFacebookToken(token);
+            } else {
+              this.error = 'No se completo el inicio de sesion con Facebook.';
+            }
+          }),
+          { scope: 'email,public_profile' }
+        );
+      })
+      .catch(() => {
+        this.error = 'No se pudo cargar Facebook. Revisa tu conexion.';
+      });
+  }
+
+  private handleFacebookToken(accessToken: string): void {
+    this.loading = true;
+    this.authService.loginWithFacebook(accessToken).subscribe({
+      next: (response: any) => {
+        this.loading = false;
+        if (response?.exito) {
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.error = response?.mensaje || 'No se pudo registrar con Facebook';
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err?.error?.mensaje || 'No se pudo registrar con Facebook';
+      }
+    });
+  }
+
+  private loadFacebookSdk(): Promise<void> {
+    if (this.facebookReady && typeof FB !== 'undefined') {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const init = () => {
+        FB.init({ appId: this.facebookAppId, cookie: true, xfbml: false, version: 'v19.0' });
+        this.facebookReady = true;
+        resolve();
+      };
+
+      if (typeof FB !== 'undefined') {
+        init();
+        return;
+      }
+
+      (window as any).fbAsyncInit = init;
+
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/es_LA/sdk.js';
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = 'anonymous';
+      script.onerror = () => reject();
+      document.body.appendChild(script);
     });
   }
 

@@ -17,12 +17,21 @@
         >
           G
         </button>
-        <div class="circle facebook">f</div>
-        <div class="circle xbrand">X</div>
+        <button
+          class="circle facebook"
+          type="button"
+          [disabled]="!facebookConfigured"
+          (click)="onFacebookRegister()"
+          [title]="facebookConfigured ? 'Registrarse con Facebook' : 'Facebook aun no esta configurado'"
+          aria-label="Registrarse con Facebook"
+        >
+          f
+        </button>
+        <div class="circle xbrand" title="X aun no esta disponible">X</div>
       </div>
 
-      <p class="google-help" *ngIf="googleConfigLoaded && !googleConfigured">
-        Google aun no esta configurado. Agrega tu Client ID en el backend.
+      <p class="google-help" *ngIf="googleConfigLoaded && !googleConfigured && !facebookConfigured">
+        Google y Facebook aun no estan configurados. Puedes registrarte con tu correo.
       </p>
 
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()">

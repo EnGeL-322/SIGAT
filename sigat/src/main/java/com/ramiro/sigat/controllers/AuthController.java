@@ -2,6 +2,7 @@ package com.ramiro.sigat.controllers;
 
 import com.ramiro.sigat.dto.*;
 import com.ramiro.sigat.models.Usuario;
+import com.ramiro.sigat.services.FacebookAuthService;
 import com.ramiro.sigat.services.GoogleAuthService;
 import com.ramiro.sigat.services.PasswordResetService;
 import com.ramiro.sigat.services.RolService;
@@ -22,10 +23,15 @@ public class AuthController {
     @Autowired
     private GoogleAuthService googleAuthService;
     @Autowired
+    private FacebookAuthService facebookAuthService;
+    @Autowired
     private PasswordResetService passwordResetService;
 
     @Value("${app.googleClientId:}")
     private String googleClientId;
+
+    @Value("${app.facebookAppId:}")
+    private String facebookAppId;
 
     @PostMapping("/login")
     public ResponseEntity<ResponseDTO> login(@RequestBody LoginRequestDTO request) {
@@ -59,6 +65,7 @@ public class AuthController {
     public ResponseEntity<ResponseDTO> config() {
         AuthConfigDTO config = AuthConfigDTO.builder()
                 .googleClientId(googleClientId)
+                .facebookAppId(facebookAppId)
                 .build();
         return ResponseEntity.ok(new ResponseDTO(true, "Configuracion obtenida", config));
     }
@@ -71,6 +78,17 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ResponseDTO(false, "Error con Google: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/facebook")
+    public ResponseEntity<ResponseDTO> facebook(@RequestBody FacebookLoginRequestDTO request) {
+        try {
+            Usuario usuario = facebookAuthService.loginConFacebook(request.getAccessToken());
+            return ResponseEntity.ok(new ResponseDTO(true, "Login con Facebook exitoso", crearLoginResponse(usuario)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ResponseDTO(false, "Error con Facebook: " + e.getMessage(), null));
         }
     }
 

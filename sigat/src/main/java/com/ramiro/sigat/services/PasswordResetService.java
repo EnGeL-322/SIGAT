@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class PasswordResetService {
     private static final int CODE_MIN = 100000;
     private static final int CODE_RANGE = 900000;
-    private static final int EXPIRATION_MINUTES = 15;
+    private static final int EXPIRATION_MINUTES = 5;
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordResetCodeRepository resetCodeRepository;

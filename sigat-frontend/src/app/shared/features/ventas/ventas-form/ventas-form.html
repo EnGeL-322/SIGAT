@@ -43,7 +43,7 @@
 
       <label>
         <span>Vendedor</span>
-        <input [(ngModel)]="venta.vendedor" placeholder="Vendedor">
+        <input [(ngModel)]="venta.vendedor" placeholder="Vendedor" readonly>
       </label>
     </div>
 
@@ -53,15 +53,23 @@
         <div class="sale-detail-editor">
           <label>
             <span>Producto</span>
-            <select [(ngModel)]="detalle.productoId">
+            <select [(ngModel)]="detalle.productoId" (ngModelChange)="productoCambiado()">
               <option [ngValue]="null">Producto</option>
               <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
             </select>
           </label>
 
           <label>
+            <span>IMEI</span>
+            <select [(ngModel)]="detalle.imeiId" (ngModelChange)="imeiCambiado()">
+              <option [ngValue]="null">Automatico</option>
+              <option *ngFor="let imei of imeisDisponibles" [ngValue]="imei.id">{{ imei.numero }}</option>
+            </select>
+          </label>
+
+          <label>
             <span>Cantidad</span>
-            <input type="number" min="1" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
+            <input type="number" min="1" [(ngModel)]="detalle.cantidad" [readonly]="!!detalle.imeiId" placeholder="Cantidad">
           </label>
 
           <label>
@@ -84,12 +92,12 @@
           <div class="sale-summary-head">
             <span></span>
             <span>Producto</span>
-            <span>Precio unitario</span>
+            <span>IMEI / Precio</span>
           </div>
           <div class="sale-summary-row" *ngFor="let d of detalles; let i = index">
             <span>{{ i + 1 }}</span>
             <span>{{ d.productoNombre }}</span>
-            <span>{{ d.precioUnitario }}</span>
+            <span>{{ d.imeiNumero || 'Automatico' }} - S/ {{ d.precioUnitario }}</span>
           </div>
         </div>
       </div>
@@ -98,6 +106,7 @@
     <div class="sale-detail-list" *ngIf="detalles.length">
       <div class="sale-detail-row" *ngFor="let d of detalles; let i = index">
         <span>{{ d.productoNombre }}</span>
+        <span>IMEI: {{ d.imeiNumero || 'Automatico' }}</span>
         <span>Cantidad: {{ d.cantidad }}</span>
         <span>S/ {{ d.precioUnitario }}</span>
         <span>S/ {{ d.subtotal }}</span>

@@ -13,7 +13,9 @@ import { ApiService } from '../../../../core/api.service';
 export class VentasListComponent implements OnInit {
   ventas: any[] = [];
   detalles: any[] = [];
+  selectedPhone: any = null;
   detailModal = false;
+  phoneModal = false;
   selected: any = null;
   error = '';
 
@@ -50,6 +52,11 @@ export class VentasListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  verTelefono(detalle: any): void {
+    this.selectedPhone = detalle;
+    this.phoneModal = true;
   }
 
   remove(id: number): void {

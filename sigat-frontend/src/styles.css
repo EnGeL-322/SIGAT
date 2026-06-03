@@ -298,6 +298,10 @@ img[src$="logo-sigat.png"]:hover {
   grid-template-columns: 54px 140px 140px 1.25fr 1fr 1.25fr 110px 140px;
 }
 
+.grid-reporte-compras {
+  grid-template-columns: 54px 140px 140px 1.15fr 1fr 130px 120px 190px;
+}
+
 .row-actions {
   display: flex;
   gap: 10px;
@@ -508,6 +512,44 @@ img[src$="logo-sigat.png"]:hover {
   color: #233153;
   font-size: 16px;
   font-weight: 700;
+}
+
+.imei-summary {
+  justify-content: flex-start;
+  margin: 10px 0 16px;
+}
+
+.imei-summary > span {
+  min-width: 140px;
+  padding: 12px 14px;
+}
+
+.imei-item,
+.sold-imei-item {
+  grid-template-columns: 1.2fr auto 1fr 1fr;
+  align-items: center;
+}
+
+.sold-imei-item {
+  grid-template-columns: 1.1fr 1fr 0.8fr 1fr 0.8fr;
+}
+
+.imei-item small,
+.sold-imei-item small {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(34, 52, 94, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.imei-item span,
+.sold-imei-item span {
+  color: #233153;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .detail-line-number {
@@ -954,7 +996,7 @@ img[src$="logo-sigat.png"]:hover {
 
 .sale-detail-editor {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.9fr 48px;
+  grid-template-columns: 1.2fr 1.1fr 0.7fr 0.9fr 48px;
   gap: 14px;
   align-items: end;
   margin-top: 14px;
@@ -1007,7 +1049,7 @@ img[src$="logo-sigat.png"]:hover {
 }
 
 .sale-detail-row {
-  grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr 48px;
+  grid-template-columns: 1.2fr 1fr 0.8fr 0.8fr 0.8fr 48px;
   display: grid;
   gap: 12px;
   align-items: center;
@@ -1036,6 +1078,7 @@ img[src$="logo-sigat.png"]:hover {
   .grid-usuarios,
   .grid-reporte-stock,
   .grid-bajo-stock,
+  .grid-reporte-compras,
   .grid-reporte-ventas {
     grid-template-columns: 1fr;
   }
@@ -1068,6 +1111,8 @@ img[src$="logo-sigat.png"]:hover {
   .sale-detail-row,
   .sale-detail-item,
   .purchase-detail-item,
+  .imei-item,
+  .sold-imei-item,
   .operation-bottom {
     grid-template-columns: 1fr;
   }

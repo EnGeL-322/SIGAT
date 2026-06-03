@@ -60,7 +60,7 @@
     </div>
 
     <div class="purchase-detail-editor">
-      <select [(ngModel)]="detalle.productoId">
+      <select [(ngModel)]="detalle.productoId" (ngModelChange)="productoCambiado()">
         <option [ngValue]="null">Producto</option>
         <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
       </select>

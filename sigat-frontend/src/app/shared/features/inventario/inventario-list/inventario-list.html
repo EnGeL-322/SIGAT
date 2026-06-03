@@ -8,6 +8,7 @@
     <div class="actions">
       <input [(ngModel)]="searchMarca" (input)="filtrar()" placeholder="Buscar marca">
       <input [(ngModel)]="searchModelo" (input)="filtrar()" placeholder="Buscar modelo">
+      <button class="secondary-btn" type="button" (click)="verVendidos()">IMEI vendidos</button>
     </div>
   </div>
 
@@ -45,10 +46,26 @@
       <p><strong>Stock actual</strong> <span>{{ selected?.stockActual }}</span></p>
 
       <h3>IMEI y equipos</h3>
+      <div class="report-summary imei-summary">
+        <span>En stock: {{ contarPorEstado('EN_STOCK') }}</span>
+        <span>Vendidos: {{ contarPorEstado('VENDIDO') }}</span>
+        <span>Defectuosos: {{ contarPorEstado('DEFECTUOSO') }}</span>
+      </div>
       <div class="mini-list">
-        <div class="mini-item" *ngFor="let imei of imeis">
-          <span>{{ imei.numero }}</span>
-          <b>{{ imei.estado }}</b>
+        <div class="mini-item imei-item" *ngFor="let imei of imeis">
+          <div>
+            <small>IMEI</small>
+            <span>{{ imei.numero }}</span>
+          </div>
+          <b class="badge" [ngClass]="imeiEstadoClass(imei.estado)">{{ imei.estado }}</b>
+          <div *ngIf="imei.numeroVenta">
+            <small>Venta</small>
+            <span>{{ imei.numeroVenta }}</span>
+          </div>
+          <div *ngIf="imei.clienteNombre">
+            <small>Cliente</small>
+            <span>{{ imei.clienteNombre }}</span>
+          </div>
         </div>
       </div>
       <p *ngIf="!imeis.length">
@@ -57,6 +74,46 @@
       </p>
 
       <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="soldModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="soldModal = false" aria-label="Cerrar">X</button>
+      <h3>IMEI de telefonos vendidos</h3>
+
+      <div class="empty-state" *ngIf="loadingVendidos">Cargando IMEI vendidos...</div>
+      <div class="mini-list" *ngIf="!loadingVendidos && vendidos.length">
+        <div class="mini-item sold-imei-item" *ngFor="let imei of vendidos">
+          <div>
+            <small>IMEI vendido</small>
+            <span>{{ imei.numero }}</span>
+          </div>
+          <div>
+            <small>Equipo</small>
+            <span>{{ imei.productoNombre }}</span>
+          </div>
+          <div>
+            <small>Venta</small>
+            <span>{{ imei.numeroVenta || '-' }}</span>
+          </div>
+          <div>
+            <small>Cliente</small>
+            <span>{{ imei.clienteNombre || '-' }}</span>
+          </div>
+          <div>
+            <small>Fecha</small>
+            <span>{{ imei.fechaVenta | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p *ngIf="!loadingVendidos && !vendidos.length">
+        <strong>Sin vendidos</strong>
+        <span>Aun no hay telefonos vendidos con IMEI registrado.</span>
+      </p>
+
+      <button class="primary-btn" (click)="soldModal = false">Cerrar</button>
     </div>
   </div>
 </section>

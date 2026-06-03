@@ -102,6 +102,7 @@ public class AuthController {
                 .token("JWT_TOKEN_" + usuario.getId())
                 .usuarioId(usuario.getId())
                 .nombre(usuario.getNombre())
+                .apellido(usuario.getApellido())
                 .email(usuario.getEmail())
                 .rol(rolService.normalizarNombreRol(usuario.getRol().getNombre()))
                 .build();

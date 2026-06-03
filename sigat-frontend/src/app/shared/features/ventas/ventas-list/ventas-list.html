@@ -25,7 +25,7 @@
       <span>{{ item.clienteNombre }}</span>
       <span>{{ item.numeroVenta }}</span>
       <span>{{ item.total }}</span>
-      <span>SIGAT</span>
+      <span>{{ item.vendedorNombre || 'SIGAT' }}</span>
       <span class="row-actions">
         <button class="icon green" type="button" (click)="verDetalle(item)" aria-label="Ver detalle de venta">&#128065;</button>
         <button class="icon red" type="button" (click)="remove(item.id)" aria-label="Eliminar venta">&#128465;</button>
@@ -59,10 +59,25 @@
             <small>Precio unitario</small>
             <span>S/ {{ d.precioUnitario }}</span>
           </div>
+          <button class="icon blue" type="button" (click)="verTelefono(d)" aria-label="Ver telefono e IMEI">&#128241;</button>
         </div>
       </div>
 
       <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="phoneModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="phoneModal = false" aria-label="Cerrar">X</button>
+      <h3>Telefono vendido</h3>
+      <p><strong>Producto</strong> <span>{{ selectedPhone?.productoNombre }}</span></p>
+      <p><strong>IMEI</strong> <span>{{ selectedPhone?.imeiNumero }}</span></p>
+      <p><strong>Precio</strong> <span>S/ {{ selectedPhone?.precioUnitario }}</span></p>
+      <p><strong>Venta</strong> <span>{{ selected?.numeroVenta }}</span></p>
+      <p><strong>Cliente</strong> <span>{{ selected?.clienteNombre }}</span></p>
+      <p><strong>Vendedor</strong> <span>{{ selected?.vendedorNombre || 'SIGAT' }}</span></p>
+      <button class="primary-btn" (click)="phoneModal = false">Cerrar</button>
     </div>
   </div>
 </section>

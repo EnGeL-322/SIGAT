@@ -44,6 +44,12 @@ export class ComprasFormComponent implements OnInit {
     });
   }
 
+  productoCambiado(): void {
+    const producto = this.productos.find(p => p.id == this.detalle.productoId);
+    this.detalle.precioUnitario = Number(producto?.precio || 0);
+    this.cdr.detectChanges();
+  }
+
   agregarDetalle(): void {
     this.error = '';
     if (!this.detalle.productoId || !this.detalle.cantidad || !this.detalle.precioUnitario) return;

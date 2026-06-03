@@ -1,0 +1,145 @@
+<section class="module-page">
+  <div class="module-top report-heading">
+    <div class="title-block">
+      <span class="module-eyebrow">Reportes</span>
+      <h2>Reporte de compras</h2>
+    </div>
+
+    <div class="report-period">
+      <span>Tipo de periodo</span>
+      <button [class.active-report]="periodo === 'DIA'" (click)="cambiarPeriodo('DIA')">Dia</button>
+      <button [class.active-report]="periodo === 'SEMANA'" (click)="cambiarPeriodo('SEMANA')">Semana</button>
+      <button [class.active-report]="periodo === 'MES'" (click)="cambiarPeriodo('MES')">Mes</button>
+    </div>
+  </div>
+
+  <div class="report-tabs">
+    <a routerLink="/reportes/ventas">Reporte de ventas</a>
+    <a routerLink="/reportes/compras" class="active-report">Reporte de compras</a>
+    <a routerLink="/reportes/bajo-stock">Bajo stock</a>
+  </div>
+
+  <div class="report-filter-bar">
+    <label>Fecha</label>
+    <input type="date" [(ngModel)]="fecha" (change)="filtrar()">
+    <label>Proveedor</label>
+    <select [(ngModel)]="proveedorId" (change)="filtrar()">
+      <option value="TODOS">Todos</option>
+      <option *ngFor="let proveedor of proveedores" [ngValue]="proveedor.id">{{ proveedor.nombre }}</option>
+    </select>
+    <label>Producto</label>
+    <select [(ngModel)]="productoId" (change)="filtrar()">
+      <option value="TODOS">Todos</option>
+      <option *ngFor="let producto of productos" [ngValue]="producto.id">{{ producto.nombre }}</option>
+    </select>
+    <button class="icon green" type="button" (click)="filtrar()">OK</button>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-header grid-reporte-compras">
+      <span>ID</span>
+      <span>Codigo compra</span>
+      <span>Fecha</span>
+      <span>Proveedor</span>
+      <span>Producto</span>
+      <span>Total equipos</span>
+      <span>Total</span>
+      <span>Acciones</span>
+    </div>
+
+    <div class="empty-state" *ngIf="loading">Cargando reporte de compras...</div>
+
+    <div class="table-row grid-reporte-compras" *ngFor="let fila of filasPaginadas; let i = index">
+      <span>{{ ((paginaActual - 1) * itemsPorPagina) + i + 1 }}</span>
+      <span>{{ fila.codigoCompra }}</span>
+      <span>{{ fila.fechaCompra | date:'dd/MM/yyyy' }}</span>
+      <span>{{ fila.proveedorNombre }}</span>
+      <span>{{ fila.productoNombre }}</span>
+      <span>{{ fila.cantidad }}</span>
+      <span>S/ {{ fila.subtotal }}</span>
+      <span class="row-actions">
+        <button class="icon green" (click)="verDetalle(fila)">Ver</button>
+        <button class="icon blue" (click)="verImeis(fila)">IMEI</button>
+        <button class="icon yellow" (click)="imprimirFila(fila)">PDF</button>
+      </span>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && !filtrados.length">
+      No hay compras para los filtros seleccionados.
+    </div>
+
+    <div class="report-pagination" *ngIf="!loading && filtrados.length">
+      <span class="pagination-info">
+        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ filtrados.length }} registros
+      </span>
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">Anterior</button>
+        <button type="button" *ngFor="let pagina of paginas" [class.active-page]="pagina === paginaActual" (click)="cambiarPagina(pagina)">
+          {{ pagina }}
+        </button>
+        <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-summary">
+    <div class="report-metric money">
+      <span>Total comprado</span>
+      <strong>S/ {{ totalComprado() | number:'1.2-2' }}</strong>
+    </div>
+    <div class="report-metric">
+      <span>Cantidad equipos</span>
+      <strong>{{ cantidadEquipos() }}</strong>
+    </div>
+    <div class="report-metric">
+      <span>Nro. de compras</span>
+      <strong>{{ numeroCompras() }}</strong>
+    </div>
+    <div class="report-metric">
+      <span>IMEI registrados</span>
+      <strong>{{ totalImeis() }}</strong>
+    </div>
+    <button class="secondary-btn" (click)="exportarExcel()">Exportar Excel</button>
+    <button class="primary-btn" (click)="exportarPdf()">Exportar PDF</button>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="detailModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="detailModal = false" aria-label="Cerrar">X</button>
+      <h3>Detalle de compra</h3>
+      <p><strong>Codigo compra</strong> <span>{{ selected?.codigoCompra }}</span></p>
+      <p><strong>Proveedor</strong> <span>{{ selected?.proveedorNombre }}</span></p>
+      <p><strong>Fecha</strong> <span>{{ selected?.fechaCompra | date:'short' }}</span></p>
+      <p><strong>Producto</strong> <span>{{ selected?.productoNombre }}</span></p>
+      <p><strong>Total de equipos</strong> <span>{{ selected?.cantidad }}</span></p>
+      <p><strong>IMEI ingresados</strong> <span>{{ selected?.imeis?.length || 0 }}</span></p>
+      <p><strong>Monto total</strong> <span>S/ {{ selected?.subtotal }}</span></p>
+      <button class="primary-btn" (click)="detailModal = false">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="imeiModal">
+    <div class="modal-card detail-card">
+      <button class="modal-close" type="button" (click)="imeiModal = false" aria-label="Cerrar">X</button>
+      <h3>IMEI registrados</h3>
+      <div class="mini-list">
+        <div class="mini-item imei-item" *ngFor="let imei of selected?.imeis">
+          <div>
+            <small>Modelo</small>
+            <span>{{ selected?.productoNombre }}</span>
+          </div>
+          <div>
+            <small>IMEI</small>
+            <span>{{ imei.numero }}</span>
+          </div>
+          <b class="badge" [ngClass]="imei.estado === 'VENDIDO' ? 'danger' : 'success'">{{ imei.estado }}</b>
+        </div>
+      </div>
+      <p *ngIf="!selected?.imeis?.length">
+        <strong>Sin IMEI</strong>
+        <span>Esta compra no tiene IMEI registrados.</span>
+      </p>
+      <button class="primary-btn" (click)="imeiModal = false">Cerrar</button>
+    </div>
+  </div>
+</section>

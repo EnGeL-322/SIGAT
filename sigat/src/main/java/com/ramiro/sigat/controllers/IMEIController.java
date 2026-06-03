@@ -22,6 +22,15 @@ public class IMEIController {
             return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
         }
     }
+    @GetMapping
+    public ResponseEntity<ResponseDTO> listarTodos() {
+        try {
+            List<IMEIDTO> imeis = imeiService.listarTodos();
+            return ResponseEntity.ok(new ResponseDTO(true, "IMEIs obtenidos", imeis));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO> obtenerPorId(@PathVariable Long id) {
         try {
@@ -56,6 +65,24 @@ public class IMEIController {
             return ResponseEntity.ok(new ResponseDTO(true, "IMEIs en stock", imeis));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
+    @GetMapping("/vendidos")
+    public ResponseEntity<ResponseDTO> listarVendidos() {
+        try {
+            List<IMEIDTO> imeis = imeiService.listarVendidos();
+            return ResponseEntity.ok(new ResponseDTO(true, "IMEIs vendidos", imeis));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ResponseDTO(false, e.getMessage(), null));
+        }
+    }
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<ResponseDTO> listarPorEstado(@PathVariable String estado) {
+        try {
+            List<IMEIDTO> imeis = imeiService.listarPorEstado(estado);
+            return ResponseEntity.ok(new ResponseDTO(true, "IMEIs por estado", imeis));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ResponseDTO(false, e.getMessage(), null));
         }
     }
 }

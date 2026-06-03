@@ -142,6 +142,14 @@ export class ApiService {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/imei/en-stock`));
   }
 
+  obtenerIMEI(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/imei`));
+  }
+
+  obtenerIMEIVendidos(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/imei/vendidos`));
+  }
+
   obtenerIMEIPorProducto(productoId: number): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/imei/producto/${productoId}`));
   }

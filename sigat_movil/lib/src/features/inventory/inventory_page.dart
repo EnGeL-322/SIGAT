@@ -49,7 +49,15 @@ class _InventoryPageState extends State<InventoryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ModuleHeader(eyebrow: 'Inventario', title: 'Stock general'),
+        ModuleHeader(
+          eyebrow: 'Inventario',
+          title: 'Stock general',
+          trailing: IconButton.filledTonal(
+            onPressed: _showSoldImeis,
+            icon: const Icon(Icons.sell_outlined),
+            tooltip: 'IMEI vendidos',
+          ),
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -207,7 +215,13 @@ class _InventoryPageState extends State<InventoryPage> {
                                   leading: const Icon(Icons.qr_code_2),
                                   title: Text(imei['numero']?.toString() ?? ''),
                                   subtitle: Text(
-                                    imei['estado']?.toString() ?? '',
+                                    [
+                                      imei['estado']?.toString() ?? '',
+                                      if (imei['numeroVenta'] != null)
+                                        'Venta: ${imei['numeroVenta']}',
+                                      if (imei['clienteNombre'] != null)
+                                        'Cliente: ${imei['clienteNombre']}',
+                                    ].join('\n'),
                                   ),
                                 );
                               },
@@ -222,6 +236,84 @@ class _InventoryPageState extends State<InventoryPage> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _showSoldImeis() async {
+    final future = SessionScope.read(context).api.list('/imei/vendidos');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(18),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.72,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'IMEI vendidos',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: future,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return EmptyState(
+                          message: snapshot.error.toString(),
+                          icon: Icons.error_outline,
+                        );
+                      }
+                      final imeis = snapshot.data ?? const [];
+                      if (imeis.isEmpty) {
+                        return const EmptyState(
+                          message: 'Aun no hay telefonos vendidos',
+                        );
+                      }
+                      return ListView.separated(
+                        itemCount: imeis.length,
+                        separatorBuilder: (_, _) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final imei = imeis[index];
+                          return ListTile(
+                            leading: const Icon(Icons.qr_code_2),
+                            title: Text(imei['numero']?.toString() ?? ''),
+                            subtitle: Text(
+                              [
+                                'Equipo: ${imei['productoNombre'] ?? '-'}',
+                                'Venta: ${imei['numeroVenta'] ?? '-'}',
+                                'Cliente: ${imei['clienteNombre'] ?? '-'}',
+                              ].join('\n'),
+                            ),
+                            trailing: const StatusChip(
+                              label: 'VENDIDO',
+                              color: AppTheme.rose,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

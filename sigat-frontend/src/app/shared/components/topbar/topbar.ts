@@ -34,6 +34,7 @@ export class TopbarComponent {
     { label: 'Clientes', group: 'Maestros', route: '/clientes', keywords: ['cliente', 'clientes', 'dni', 'maestros'] },
     { label: 'Stock general', group: 'Inventario', route: '/inventario', keywords: ['stock', 'inventario', 'imei', 'equipos', 'general'] },
     { label: 'Reporte ventas', group: 'Reportes', route: '/reportes/ventas', keywords: ['reporte', 'reportes', 'venta', 'ventas', 'pdf', 'excel'] },
+    { label: 'Reporte compras', group: 'Reportes', route: '/reportes/compras', keywords: ['reporte', 'reportes', 'compra', 'compras', 'proveedor', 'imei', 'pdf', 'excel'] },
     { label: 'Bajo stock', group: 'Reportes', route: '/reportes/bajo-stock', keywords: ['bajo stock', 'stock bajo', 'agotado', 'minimo', 'reportes'] },
     { label: 'Usuarios', group: 'Seguridad', route: '/usuarios', keywords: ['usuario', 'usuarios', 'seguridad', 'roles', 'admin'], adminOnly: true }
   ];

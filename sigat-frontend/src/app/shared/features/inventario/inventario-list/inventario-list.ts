@@ -14,8 +14,11 @@ export class InventarioListComponent implements OnInit {
   productos: any[] = [];
   filtrados: any[] = [];
   imeis: any[] = [];
+  vendidos: any[] = [];
   selected: any = null;
   detailModal = false;
+  soldModal = false;
+  loadingVendidos = false;
 
   searchMarca = '';
   searchModelo = '';
@@ -53,6 +56,27 @@ export class InventarioListComponent implements OnInit {
     });
   }
 
+  verVendidos(): void {
+    this.loadingVendidos = true;
+    this.soldModal = true;
+    this.api.obtenerIMEIVendidos().subscribe({
+      next: (res: any) => {
+        this.vendidos = res?.datos || [];
+        this.loadingVendidos = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.vendidos = [];
+        this.loadingVendidos = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  contarPorEstado(estado: string): number {
+    return this.imeis.filter(imei => imei.estado === estado).length;
+  }
+
   estadoStock(stock: number): string {
     if (stock <= 0) return 'AGOTADO';
     if (stock <= 5) return 'STOCK BAJO';
@@ -62,6 +86,12 @@ export class InventarioListComponent implements OnInit {
   estadoClass(stock: number): string {
     if (stock <= 0) return 'danger';
     if (stock <= 5) return 'warning';
+    return 'success';
+  }
+
+  imeiEstadoClass(estado: string): string {
+    if (estado === 'VENDIDO') return 'danger';
+    if (estado === 'DEFECTUOSO') return 'warning';
     return 'success';
   }
 }

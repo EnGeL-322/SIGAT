@@ -17,7 +17,14 @@ public class VentaController {
     public ResponseEntity<ResponseDTO> crear(@RequestBody Map<String, Object> payload) {
         try {
             VentaDTO ventaDTO = new VentaDTO();
-            ventaDTO.setClienteId(((Number) ((Map) payload.get("venta")).get("clienteId")).longValue());
+            Map ventaMap = (Map) payload.get("venta");
+            ventaDTO.setClienteId(((Number) ventaMap.get("clienteId")).longValue());
+            if (ventaMap.get("vendedorId") != null) {
+                ventaDTO.setVendedorId(((Number) ventaMap.get("vendedorId")).longValue());
+            }
+            if (ventaMap.get("vendedorNombre") != null) {
+                ventaDTO.setVendedorNombre(ventaMap.get("vendedorNombre").toString());
+            }
             List<Map> detallesMap = (List<Map>) payload.get("detalles");
             List<DetalleVentaDTO> detalles = detallesMap.stream()
                     .map(d -> DetalleVentaDTO.builder()

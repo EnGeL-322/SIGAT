@@ -28,6 +28,12 @@ public class Venta {
     @Column(nullable = false)
     private Double total;
 
+    @Column(name = "vendedor_id")
+    private Long vendedorId;
+
+    @Column(name = "vendedor_nombre")
+    private String vendedorNombre;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private EstadoVenta estado; // COMPLETADA, CANCELADA, PENDIENTE

@@ -231,9 +231,7 @@ class _MovementListPageState extends State<MovementListPage> {
                         separatorBuilder: (_, _) => const Divider(),
                         itemBuilder: (context, index) {
                           final detail = details[index];
-                          final imeis = detail['imeis'] is List
-                              ? detail['imeis'] as List
-                              : const [];
+                          final imeiNumero = detail['imeiNumero']?.toString();
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
@@ -241,7 +239,7 @@ class _MovementListPageState extends State<MovementListPage> {
                             ),
                             subtitle: Text(
                               'Cantidad: ${detail['cantidad'] ?? 1} - Precio: ${formatMoney(detail['precioUnitario'])}'
-                              '${imeis.isEmpty ? '' : '\nIMEI: ${imeis.map((e) => e is Map ? e['numero'] : '').where((e) => e.toString().isNotEmpty).join(', ')}'}',
+                              '${imeiNumero == null || imeiNumero.isEmpty ? '' : '\nIMEI vendido: $imeiNumero'}',
                             ),
                             trailing: Text(formatMoney(detail['subtotal'])),
                           );

@@ -58,6 +58,14 @@ public class IMEIService {
     }
 
     @Transactional
+    public List<IMEIDTO> listarTodos() {
+        productoRepository.findAll().forEach(this::generarImeisFaltantes);
+        return imeiRepository.findAll().stream()
+                .map(this::convertirADTO)
+                .toList();
+    }
+
+    @Transactional
     public List<IMEIDTO> listarPorProducto(Long productoId) {
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -71,6 +79,13 @@ public class IMEIService {
     public List<IMEIDTO> listarEnStock() {
         productoRepository.findAll().forEach(this::generarImeisFaltantes);
         return imeiRepository.findByEstado(IMEI.EstadoIMEI.EN_STOCK).stream()
+                .map(this::convertirADTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IMEIDTO> listarVendidos() {
+        return imeiRepository.findByEstado(IMEI.EstadoIMEI.VENDIDO).stream()
                 .map(this::convertirADTO)
                 .toList();
     }

@@ -55,6 +55,8 @@ public class VentaService {
         Venta venta = new Venta();
         venta.setNumeroVenta(generarNumeroVenta());
         venta.setCliente(cliente);
+        venta.setVendedorId(dto.getVendedorId());
+        venta.setVendedorNombre(dto.getVendedorNombre());
         venta.setEstado(Venta.EstadoVenta.COMPLETADA);
         venta.setTotal(0.0);
         venta = ventaRepository.save(venta);
@@ -196,6 +198,8 @@ public class VentaService {
                 .numeroVenta(venta.getNumeroVenta())
                 .clienteId(venta.getCliente().getId())
                 .clienteNombre(venta.getCliente().getNombre() + " " + venta.getCliente().getApellido())
+                .vendedorId(venta.getVendedorId())
+                .vendedorNombre(venta.getVendedorNombre())
                 .total(venta.getTotal())
                 .estado(venta.getEstado().toString())
                 .fechaVenta(venta.getFechaVenta())

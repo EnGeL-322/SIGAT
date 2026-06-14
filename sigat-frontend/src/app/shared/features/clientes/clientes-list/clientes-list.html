@@ -44,13 +44,34 @@
       <h3>{{ editId ? 'Editar cliente' : 'Agregar cliente' }}</h3>
 
       <form [formGroup]="form" class="form-grid" (ngSubmit)="save()">
-        <input value="TIPO DOCUMENTO" disabled>
-        <input formControlName="cedula" placeholder="Numero de documento">
-        <input formControlName="nombre" placeholder="Nombre">
-        <input formControlName="apellido" placeholder="Apellido">
-        <input formControlName="telefono" placeholder="Telefono">
-        <input formControlName="email" placeholder="Correo">
-        <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+        <label class="field">
+          <span>Tipo documento</span>
+          <input value="DNI" disabled>
+        </label>
+        <label class="field">
+          <span>Numero de documento</span>
+          <input formControlName="cedula" placeholder="Numero de documento">
+        </label>
+        <label class="field">
+          <span>Nombre</span>
+          <input formControlName="nombre" placeholder="Nombre">
+        </label>
+        <label class="field">
+          <span>Apellido</span>
+          <input formControlName="apellido" placeholder="Apellido">
+        </label>
+        <label class="field">
+          <span>Telefono</span>
+          <input formControlName="telefono" placeholder="Telefono">
+        </label>
+        <label class="field">
+          <span>Correo</span>
+          <input formControlName="email" placeholder="Correo">
+        </label>
+        <label class="field field-full">
+          <span>Direccion</span>
+          <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+        </label>
         <p class="form-error" *ngIf="error">{{ error }}</p>
 
         <div class="modal-actions">

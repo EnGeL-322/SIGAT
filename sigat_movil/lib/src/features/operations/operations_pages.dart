@@ -4,6 +4,7 @@ import '../../core/network/api_client.dart';
 import '../../core/session/session_controller.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/data_widgets.dart';
+import '../catalog/entity_list_page.dart';
 
 class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
@@ -52,6 +53,41 @@ extension MovementLabels on MovementType {
   String get partyIdKey => isPurchase ? 'proveedorId' : 'clienteId';
   String get partyLabel => isPurchase ? 'Proveedor' : 'Cliente';
   String get detailPath => isPurchase ? '/compras' : '/ventas';
+  String get createPartyLabel => isPurchase ? 'Nuevo proveedor' : 'Nuevo cliente';
+  String get addPartyLabel =>
+      isPurchase ? 'Agregar datos del proveedor' : 'Agregar datos del cliente';
+
+  /// Clave unica para localizar el registro recien creado tras recargar.
+  String get partyMatchKey => isPurchase ? 'ruc' : 'cedula';
+
+  /// Campos completos del proveedor/cliente para el alta rapida.
+  List<EntityField> get partyFields => isPurchase
+      ? const [
+          EntityField(key: 'nombre', label: 'Nombre / Razon social'),
+          EntityField(key: 'ruc', label: 'RUC'),
+          EntityField(key: 'email', label: 'Email', type: EntityFieldType.email),
+          EntityField(key: 'telefono', label: 'Telefono'),
+          EntityField(key: 'contacto', label: 'Contacto', required: false),
+          EntityField(
+            key: 'direccion',
+            label: 'Direccion',
+            type: EntityFieldType.multiline,
+            required: false,
+          ),
+        ]
+      : const [
+          EntityField(key: 'nombre', label: 'Nombre'),
+          EntityField(key: 'apellido', label: 'Apellido'),
+          EntityField(key: 'cedula', label: 'Cedula'),
+          EntityField(key: 'email', label: 'Email', type: EntityFieldType.email),
+          EntityField(key: 'telefono', label: 'Telefono'),
+          EntityField(
+            key: 'direccion',
+            label: 'Direccion',
+            type: EntityFieldType.multiline,
+            required: false,
+          ),
+        ];
 }
 
 class MovementListPage extends StatefulWidget {
@@ -284,17 +320,33 @@ class _MovementFormPageState extends State<MovementFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DropdownButtonFormField<int>(
-                      initialValue: _partyId,
-                      decoration: InputDecoration(labelText: type.partyLabel),
-                      items: _parties.map((party) {
-                        return DropdownMenuItem<int>(
-                          value: _asInt(party['id']),
-                          child: Text(_partyName(party)),
-                        );
-                      }).toList(),
-                      onChanged: (value) => setState(() => _partyId = value),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _partyId,
+                            decoration: InputDecoration(
+                              labelText: type.partyLabel,
+                            ),
+                            items: _parties.map((party) {
+                              return DropdownMenuItem<int>(
+                                value: _asInt(party['id']),
+                                child: Text(_partyName(party)),
+                              );
+                            }).toList(),
+                            onChanged: (value) =>
+                                setState(() => _partyId = value),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          onPressed: _openNewParty,
+                          icon: const Icon(Icons.person_add_alt_1),
+                          tooltip: type.createPartyLabel,
+                        ),
+                      ],
                     ),
+                    if (_parties.isEmpty) _partyEmptyHint(),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<int>(
                       initialValue: _productId,
@@ -436,6 +488,234 @@ class _MovementFormPageState extends State<MovementFormPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// Abre el formulario para registrar un proveedor/cliente con todos sus
+  /// datos sin salir de la operacion. Al guardar, recarga la lista y deja
+  /// seleccionado el registro recien creado.
+  Future<void> _openNewParty() async {
+    final type = widget.type;
+    final fields = type.partyFields;
+    final api = SessionScope.read(context).api;
+    final controllers = <String, TextEditingController>{
+      for (final field in fields)
+        field.key: TextEditingController(text: field.defaultValue.toString()),
+    };
+    final formKey = GlobalKey<FormState>();
+    var saving = false;
+    var formError = '';
+
+    final created = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 18,
+                right: 18,
+                top: 18,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+              ),
+              child: Form(
+                key: formKey,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Text(
+                      type.createPartyLabel,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final field in fields) ...[
+                      TextFormField(
+                        controller: controllers[field.key],
+                        keyboardType: _partyKeyboardType(field.type),
+                        minLines: field.type == EntityFieldType.multiline
+                            ? 3
+                            : 1,
+                        maxLines: field.type == EntityFieldType.multiline
+                            ? 5
+                            : 1,
+                        decoration: InputDecoration(labelText: field.label),
+                        validator: (value) => _validatePartyField(field, value),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ErrorBanner(message: formError),
+                    FilledButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!(formKey.currentState?.validate() ??
+                                  false)) {
+                                return;
+                              }
+                              setSheetState(() {
+                                saving = true;
+                                formError = '';
+                              });
+                              try {
+                                final payload = <String, dynamic>{
+                                  for (final field in fields)
+                                    field.key: controllers[field.key]!.text
+                                        .trim(),
+                                };
+                                final response = await api.post(
+                                  type.partyEndpoint,
+                                  payload,
+                                );
+                                final createdParty = ApiClient.mapFromResponse(
+                                  response,
+                                );
+                                if (!sheetContext.mounted) return;
+                                Navigator.pop(
+                                  sheetContext,
+                                  createdParty.isEmpty ? payload : createdParty,
+                                );
+                              } on ApiException catch (error) {
+                                setSheetState(() => formError = error.message);
+                              } finally {
+                                if (sheetContext.mounted) {
+                                  setSheetState(() => saving = false);
+                                }
+                              }
+                            },
+                      child: Text(saving ? 'Guardando...' : 'Agregar'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: saving
+                          ? null
+                          : () => Navigator.pop(sheetContext),
+                      child: const Text('Cancelar'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+
+    if (created != null && mounted) {
+      await _reloadPartiesSelecting(created);
+    }
+  }
+
+  /// Recarga proveedores/clientes y selecciona el creado por id o clave unica.
+  Future<void> _reloadPartiesSelecting(Map<String, dynamic> created) async {
+    final type = widget.type;
+    final api = SessionScope.read(context).api;
+    try {
+      final parties = await api.list(type.partyEndpoint);
+      if (!mounted) return;
+      final createdId = _asInt(created['id']);
+      final createdMatch = created[type.partyMatchKey]?.toString();
+      Map<String, dynamic>? found;
+      for (final party in parties) {
+        if (createdId != null && _asInt(party['id']) == createdId) {
+          found = party;
+          break;
+        }
+        if (createdMatch != null &&
+            createdMatch.isNotEmpty &&
+            party[type.partyMatchKey]?.toString() == createdMatch) {
+          found = party;
+          break;
+        }
+      }
+      setState(() {
+        _parties = parties;
+        if (found != null) _partyId = _asInt(found['id']);
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    }
+  }
+
+  TextInputType _partyKeyboardType(EntityFieldType type) {
+    return switch (type) {
+      EntityFieldType.email => TextInputType.emailAddress,
+      EntityFieldType.integer => TextInputType.number,
+      EntityFieldType.decimal => const TextInputType.numberWithOptions(
+        decimal: true,
+      ),
+      EntityFieldType.multiline => TextInputType.multiline,
+      EntityFieldType.password || EntityFieldType.text => TextInputType.text,
+    };
+  }
+
+  String? _validatePartyField(EntityField field, String? value) {
+    final text = value?.trim() ?? '';
+    if (field.required && text.isEmpty) return 'Campo requerido';
+    if (text.isEmpty) return null;
+    if (field.type == EntityFieldType.email && !text.contains('@')) {
+      return 'Correo no valido';
+    }
+    return null;
+  }
+
+  Widget _partyEmptyHint() {
+    final type = widget.type;
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.blue.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.blue.withValues(alpha: 0.30),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                type.isPurchase
+                    ? Icons.local_shipping_outlined
+                    : Icons.person_outline,
+                color: AppTheme.blue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  type.isPurchase
+                      ? 'Aun no tienes proveedores registrados'
+                      : 'Aun no tienes clientes registrados',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            type.isPurchase
+                ? 'Para registrar una compra nueva primero agrega todos los datos del proveedor.'
+                : 'Para registrar una venta nueva primero agrega todos los datos del cliente.',
+            style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.64)),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _openNewParty,
+            icon: const Icon(Icons.add),
+            label: Text(type.addPartyLabel),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addDetail() {

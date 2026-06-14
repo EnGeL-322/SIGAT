@@ -29,6 +29,9 @@ export class ProductosListComponent implements OnInit {
       descripcion: [''],
       marca: ['', Validators.required],
       modelo: ['', Validators.required],
+      memoria: [''],
+      ram: [''],
+      color: [''],
       precio: [0, Validators.required],
       stockMinimo: [10, Validators.required]
     });
@@ -63,6 +66,9 @@ export class ProductosListComponent implements OnInit {
       descripcion: '',
       marca: '',
       modelo: '',
+      memoria: '',
+      ram: '',
+      color: '',
       precio: 0,
       stockMinimo: 10
     });
@@ -79,6 +85,9 @@ export class ProductosListComponent implements OnInit {
       descripcion: item.descripcion,
       marca: item.marca,
       modelo: item.modelo,
+      memoria: item.memoria,
+      ram: item.ram,
+      color: item.color,
       precio: item.precio,
       stockMinimo: item.stockMinimo
     });

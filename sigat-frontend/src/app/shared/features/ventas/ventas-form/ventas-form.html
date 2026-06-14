@@ -15,7 +15,10 @@
 
     <div class="operation-general-grid venta-general-grid">
       <label>
-        <span>Cliente</span>
+        <div class="field-head">
+          <span>Cliente</span>
+          <button type="button" class="inline-add-btn" (click)="abrirNuevoCliente()">+ Nuevo</button>
+        </div>
         <select [(ngModel)]="venta.clienteId" (ngModelChange)="clienteCambiado()">
           <option [ngValue]="null">Cliente</option>
           <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option>
@@ -45,6 +48,16 @@
         <span>Vendedor</span>
         <input [(ngModel)]="venta.vendedor" placeholder="Vendedor" readonly>
       </label>
+    </div>
+
+    <div class="empty-master-hint" *ngIf="!clientes.length">
+      <div class="empty-master-text">
+        <strong>Aun no tienes clientes registrados</strong>
+        <span>Para registrar una venta nueva primero agrega todos los datos del cliente.</span>
+      </div>
+      <button type="button" class="primary-btn" (click)="abrirNuevoCliente()">
+        Agregar datos del cliente <span class="plus-chip">+</span>
+      </button>
     </div>
 
     <div class="sale-detail-area">
@@ -127,6 +140,49 @@
       <div class="operation-save-area">
         <div class="total-box">TOTAL: {{ total() | number:'1.2-2' }}</div>
         <button class="primary-btn blue-save" type="button" (click)="guardar()">Guardar venta</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showClienteModal">
+    <div class="modal-card">
+      <button class="modal-close" type="button" (click)="cerrarNuevoCliente()" aria-label="Cerrar">X</button>
+      <h3>Nuevo cliente</h3>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>Nombre</span>
+          <input [(ngModel)]="nuevoCliente.nombre" placeholder="Nombre">
+        </label>
+        <label class="field">
+          <span>Apellido</span>
+          <input [(ngModel)]="nuevoCliente.apellido" placeholder="Apellido">
+        </label>
+        <label class="field">
+          <span>Cedula / DNI</span>
+          <input [(ngModel)]="nuevoCliente.cedula" placeholder="Cedula / DNI">
+        </label>
+        <label class="field">
+          <span>Telefono</span>
+          <input [(ngModel)]="nuevoCliente.telefono" placeholder="Telefono">
+        </label>
+        <label class="field">
+          <span>Correo</span>
+          <input [(ngModel)]="nuevoCliente.email" placeholder="Correo">
+        </label>
+        <label class="field field-full">
+          <span>Direccion</span>
+          <textarea [(ngModel)]="nuevoCliente.direccion" placeholder="Direccion"></textarea>
+        </label>
+
+        <p class="form-error" *ngIf="clienteError">{{ clienteError }}</p>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" (click)="cerrarNuevoCliente()">Cancelar</button>
+          <button type="button" class="primary-btn" [disabled]="guardandoCliente" (click)="guardarNuevoCliente()">
+            {{ guardandoCliente ? 'Guardando...' : 'Agregar cliente' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

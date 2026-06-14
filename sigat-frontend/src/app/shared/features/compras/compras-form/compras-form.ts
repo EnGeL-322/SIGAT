@@ -17,6 +17,11 @@ export class ComprasFormComponent implements OnInit {
   detalles: any[] = [];
   error = '';
 
+  showProveedorModal = false;
+  guardandoProveedor = false;
+  proveedorError = '';
+  nuevoProveedor = this.proveedorVacio();
+
   compra = {
     proveedorId: null as number | null,
     fecha: new Date().toISOString().slice(0, 10),
@@ -34,13 +39,60 @@ export class ComprasFormComponent implements OnInit {
   constructor(private api: ApiService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.api.obtenerProveedores().subscribe((r: any) => {
-      this.proveedores = r?.datos || [];
-      this.cdr.detectChanges();
-    });
+    this.cargarProveedores();
     this.api.obtenerProductos().subscribe((r: any) => {
       this.productos = r?.datos || [];
       this.cdr.detectChanges();
+    });
+  }
+
+  private proveedorVacio() {
+    return { nombre: '', ruc: '', contacto: '', telefono: '', email: '', direccion: '' };
+  }
+
+  cargarProveedores(seleccionar?: any): void {
+    this.api.obtenerProveedores().subscribe((r: any) => {
+      this.proveedores = r?.datos || [];
+      if (seleccionar) {
+        const match = this.proveedores.find(p =>
+          (seleccionar.id != null && p.id === seleccionar.id) ||
+          (seleccionar.ruc && p.ruc === seleccionar.ruc));
+        if (match) this.compra.proveedorId = match.id;
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  abrirNuevoProveedor(): void {
+    this.proveedorError = '';
+    this.nuevoProveedor = this.proveedorVacio();
+    this.showProveedorModal = true;
+  }
+
+  cerrarNuevoProveedor(): void {
+    this.showProveedorModal = false;
+  }
+
+  guardarNuevoProveedor(): void {
+    this.proveedorError = '';
+    const p = this.nuevoProveedor;
+    if (!p.nombre.trim() || !p.ruc.trim() || !p.email.trim() || !p.telefono.trim()) {
+      this.proveedorError = 'Completa razon social, RUC, correo y telefono.';
+      return;
+    }
+
+    this.guardandoProveedor = true;
+    this.api.crearProveedor(p).subscribe({
+      next: (res: any) => {
+        this.guardandoProveedor = false;
+        this.showProveedorModal = false;
+        this.cargarProveedores(res?.datos || { ruc: p.ruc });
+      },
+      error: (err) => {
+        this.guardandoProveedor = false;
+        this.proveedorError = err?.error?.mensaje || err?.error?.message || 'No se pudo registrar el proveedor.';
+        this.cdr.detectChanges();
+      }
     });
   }
 

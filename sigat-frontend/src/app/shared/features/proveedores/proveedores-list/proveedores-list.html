@@ -44,12 +44,30 @@
       <h3>{{ editId ? 'Editar proveedor' : 'Agregar proveedor' }}</h3>
 
       <form [formGroup]="form" class="form-grid" (ngSubmit)="save()">
-        <input formControlName="ruc" placeholder="RUC">
-        <input formControlName="nombre" placeholder="Razon social">
-        <input formControlName="contacto" placeholder="Nombre de contacto">
-        <input formControlName="telefono" placeholder="Telefono">
-        <input formControlName="email" placeholder="Correo">
-        <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+        <label class="field">
+          <span>RUC</span>
+          <input formControlName="ruc" placeholder="RUC">
+        </label>
+        <label class="field">
+          <span>Razon social</span>
+          <input formControlName="nombre" placeholder="Razon social">
+        </label>
+        <label class="field">
+          <span>Nombre de contacto</span>
+          <input formControlName="contacto" placeholder="Nombre de contacto">
+        </label>
+        <label class="field">
+          <span>Telefono</span>
+          <input formControlName="telefono" placeholder="Telefono">
+        </label>
+        <label class="field">
+          <span>Correo</span>
+          <input formControlName="email" placeholder="Correo">
+        </label>
+        <label class="field field-full">
+          <span>Direccion</span>
+          <textarea formControlName="direccion" placeholder="Direccion"></textarea>
+        </label>
         <p class="form-error" *ngIf="error">{{ error }}</p>
 
         <div class="modal-actions">

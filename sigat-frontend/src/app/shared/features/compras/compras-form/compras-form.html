@@ -15,7 +15,10 @@
 
     <div class="operation-general-grid compra-general-grid">
       <label>
-        <span>Proveedor</span>
+        <div class="field-head">
+          <span>Proveedor</span>
+          <button type="button" class="inline-add-btn" (click)="abrirNuevoProveedor()">+ Nuevo</button>
+        </div>
         <select [(ngModel)]="compra.proveedorId">
           <option [ngValue]="null">Proveedor</option>
           <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
@@ -46,6 +49,16 @@
         <span>Observacion</span>
         <textarea [(ngModel)]="compra.observacion"></textarea>
       </label>
+    </div>
+
+    <div class="empty-master-hint" *ngIf="!proveedores.length">
+      <div class="empty-master-text">
+        <strong>Aun no tienes proveedores registrados</strong>
+        <span>Para registrar una compra nueva primero agrega todos los datos del proveedor.</span>
+      </div>
+      <button type="button" class="primary-btn" (click)="abrirNuevoProveedor()">
+        Agregar datos del proveedor <span class="plus-chip">+</span>
+      </button>
     </div>
 
     <div class="operation-section-title cyan">Detalle compra</div>
@@ -93,6 +106,49 @@
       <div class="operation-save-area">
         <div class="total-box">TOTAL: {{ total() | number:'1.2-2' }}</div>
         <button class="primary-btn blue-save" type="button" (click)="guardar()">Guardar compra</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showProveedorModal">
+    <div class="modal-card">
+      <button class="modal-close" type="button" (click)="cerrarNuevoProveedor()" aria-label="Cerrar">X</button>
+      <h3>Nuevo proveedor</h3>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>RUC</span>
+          <input [(ngModel)]="nuevoProveedor.ruc" placeholder="RUC">
+        </label>
+        <label class="field">
+          <span>Razon social</span>
+          <input [(ngModel)]="nuevoProveedor.nombre" placeholder="Razon social">
+        </label>
+        <label class="field">
+          <span>Nombre de contacto</span>
+          <input [(ngModel)]="nuevoProveedor.contacto" placeholder="Nombre de contacto">
+        </label>
+        <label class="field">
+          <span>Telefono</span>
+          <input [(ngModel)]="nuevoProveedor.telefono" placeholder="Telefono">
+        </label>
+        <label class="field">
+          <span>Correo</span>
+          <input [(ngModel)]="nuevoProveedor.email" placeholder="Correo">
+        </label>
+        <label class="field field-full">
+          <span>Direccion</span>
+          <textarea [(ngModel)]="nuevoProveedor.direccion" placeholder="Direccion"></textarea>
+        </label>
+
+        <p class="form-error" *ngIf="proveedorError">{{ proveedorError }}</p>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-btn" (click)="cerrarNuevoProveedor()">Cancelar</button>
+          <button type="button" class="primary-btn" [disabled]="guardandoProveedor" (click)="guardarNuevoProveedor()">
+            {{ guardandoProveedor ? 'Guardando...' : 'Agregar proveedor' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

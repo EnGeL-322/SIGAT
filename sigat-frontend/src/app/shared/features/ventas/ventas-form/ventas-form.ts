@@ -21,6 +21,11 @@ export class VentasFormComponent implements OnInit {
   vendedorNombre = '';
   vendedorId: number | null = null;
 
+  showClienteModal = false;
+  guardandoCliente = false;
+  clienteError = '';
+  nuevoCliente = this.clienteVacio();
+
   venta = {
     clienteId: null as number | null,
     fecha: new Date().toISOString().slice(0, 10),
@@ -49,12 +54,29 @@ export class VentasFormComponent implements OnInit {
     this.vendedorNombre = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.nombre || 'SIGAT';
     this.venta.vendedor = this.vendedorNombre;
 
-    this.api.obtenerClientes().subscribe((r: any) => {
-      this.clientes = r?.datos || [];
-      this.cdr.detectChanges();
-    });
+    this.cargarClientes();
     this.api.obtenerProductos().subscribe((r: any) => {
       this.productos = r?.datos || [];
+      this.cdr.detectChanges();
+    });
+  }
+
+  private clienteVacio() {
+    return { nombre: '', apellido: '', cedula: '', email: '', telefono: '', direccion: '' };
+  }
+
+  cargarClientes(seleccionar?: any): void {
+    this.api.obtenerClientes().subscribe((r: any) => {
+      this.clientes = r?.datos || [];
+      if (seleccionar) {
+        const match = this.clientes.find(c =>
+          (seleccionar.id != null && c.id === seleccionar.id) ||
+          (seleccionar.cedula && c.cedula === seleccionar.cedula));
+        if (match) {
+          this.venta.clienteId = match.id;
+          this.clienteCambiado();
+        }
+      }
       this.cdr.detectChanges();
     });
   }
@@ -62,6 +84,39 @@ export class VentasFormComponent implements OnInit {
   clienteCambiado(): void {
     const cliente = this.clientes.find(c => c.id == this.venta.clienteId);
     this.venta.dni = cliente?.cedula || '';
+  }
+
+  abrirNuevoCliente(): void {
+    this.clienteError = '';
+    this.nuevoCliente = this.clienteVacio();
+    this.showClienteModal = true;
+  }
+
+  cerrarNuevoCliente(): void {
+    this.showClienteModal = false;
+  }
+
+  guardarNuevoCliente(): void {
+    this.clienteError = '';
+    const c = this.nuevoCliente;
+    if (!c.nombre.trim() || !c.apellido.trim() || !c.cedula.trim() || !c.email.trim() || !c.telefono.trim()) {
+      this.clienteError = 'Completa nombre, apellido, cedula, correo y telefono.';
+      return;
+    }
+
+    this.guardandoCliente = true;
+    this.api.crearCliente(c).subscribe({
+      next: (res: any) => {
+        this.guardandoCliente = false;
+        this.showClienteModal = false;
+        this.cargarClientes(res?.datos || { cedula: c.cedula });
+      },
+      error: (err) => {
+        this.guardandoCliente = false;
+        this.clienteError = err?.error?.mensaje || err?.error?.message || 'No se pudo registrar el cliente.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   productoCambiado(): void {

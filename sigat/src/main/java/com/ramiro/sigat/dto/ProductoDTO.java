@@ -13,6 +13,9 @@ public class ProductoDTO {
     private String descripcion;
     private String marca;
     private String modelo;
+    private String memoria;
+    private String ram;
+    private String color;
     private Double precio;
     private Integer stockActual;
     private Integer stockMinimo;

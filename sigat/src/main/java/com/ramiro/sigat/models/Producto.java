@@ -31,6 +31,15 @@ public class Producto {
     @Column(nullable = false)
     private String modelo;
 
+    @Column
+    private String memoria;
+
+    @Column
+    private String ram;
+
+    @Column
+    private String color;
+
     @Column(nullable = false)
     private Double precio;
 

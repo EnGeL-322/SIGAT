@@ -24,6 +24,9 @@ public class ProductoService {
         producto.setDescripcion(dto.getDescripcion());
         producto.setMarca(dto.getMarca());
         producto.setModelo(dto.getModelo());
+        producto.setMemoria(dto.getMemoria());
+        producto.setRam(dto.getRam());
+        producto.setColor(dto.getColor());
         producto.setPrecio(dto.getPrecio());
         producto.setStockMinimo(dto.getStockMinimo());
         producto.setActivo(true);
@@ -67,6 +70,9 @@ public class ProductoService {
         producto.setDescripcion(dto.getDescripcion());
         producto.setMarca(dto.getMarca());
         producto.setModelo(dto.getModelo());
+        producto.setMemoria(dto.getMemoria());
+        producto.setRam(dto.getRam());
+        producto.setColor(dto.getColor());
         producto.setPrecio(dto.getPrecio());
         producto.setStockMinimo(dto.getStockMinimo());
         return convertirADTO(productoRepository.save(producto));
@@ -96,6 +102,9 @@ public class ProductoService {
                 .descripcion(producto.getDescripcion())
                 .marca(producto.getMarca())
                 .modelo(producto.getModelo())
+                .memoria(producto.getMemoria())
+                .ram(producto.getRam())
+                .color(producto.getColor())
                 .precio(producto.getPrecio())
                 .stockActual(producto.getStockActual())
                 .stockMinimo(producto.getStockMinimo())

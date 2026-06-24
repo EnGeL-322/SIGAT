@@ -1,5 +1,7 @@
 package com.ramiro.sigat.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter
@@ -9,7 +11,9 @@ import lombok.*;
 @Builder
 public class IMEIDTO {
     private Long id;
+    @NotBlank(message = "El numero de IMEI es obligatorio")
     private String numero;
+    @NotNull(message = "Debe indicar el producto")
     private Long productoId;
     private String productoNombre;
     private String estado;

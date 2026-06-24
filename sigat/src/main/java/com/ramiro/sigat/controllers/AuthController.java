@@ -1,5 +1,6 @@
 package com.ramiro.sigat.controllers;
 
+import com.ramiro.sigat.config.JwtUtil;
 import com.ramiro.sigat.dto.*;
 import com.ramiro.sigat.models.Usuario;
 import com.ramiro.sigat.services.FacebookAuthService;
@@ -7,6 +8,7 @@ import com.ramiro.sigat.services.GoogleAuthService;
 import com.ramiro.sigat.services.PasswordResetService;
 import com.ramiro.sigat.services.RolService;
 import com.ramiro.sigat.services.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,8 @@ public class AuthController {
     private FacebookAuthService facebookAuthService;
     @Autowired
     private PasswordResetService passwordResetService;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Value("${app.googleClientId:}")
     private String googleClientId;
@@ -34,12 +38,16 @@ public class AuthController {
     private String facebookAppId;
 
     @PostMapping("/login")
-    public ResponseEntity<ResponseDTO> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<ResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         try {
             Usuario usuario = usuarioService.obtenerUsuarioPorEmail(request.getEmail());
             if (usuario == null || !usuarioService.validarPassword(request.getPassword(), usuario.getPassword())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ResponseDTO(false, "Credenciales invalidas", null));
+            }
+            if (!Boolean.TRUE.equals(usuario.getActivo())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ResponseDTO(false, "Usuario inactivo", null));
             }
 
             return ResponseEntity.ok(new ResponseDTO(true, "Login exitoso", crearLoginResponse(usuario)));
@@ -50,9 +58,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ResponseDTO> register(@RequestBody UsuarioDTO usuarioDTO) {
+    public ResponseEntity<ResponseDTO> register(@Valid @RequestBody UsuarioDTO usuarioDTO) {
         try {
-            UsuarioDTO nuevo = usuarioService.crearUsuario(usuarioDTO);
+            UsuarioDTO nuevo = usuarioService.registrarPublico(usuarioDTO);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ResponseDTO(true, "Usuario registrado exitosamente", nuevo));
         } catch (Exception e) {
@@ -93,7 +101,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<ResponseDTO> forgotPassword(@RequestBody ForgotPasswordRequestDTO request) {
+    public ResponseEntity<ResponseDTO> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
         try {
             passwordResetService.solicitarCodigo(request.getEmail());
             return ResponseEntity.ok(new ResponseDTO(true, "Codigo enviado al correo", null));
@@ -104,7 +112,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<ResponseDTO> resetPassword(@RequestBody ResetPasswordRequestDTO request) {
+    public ResponseEntity<ResponseDTO> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
         try {
             passwordResetService.restablecerPassword(request.getEmail(), request.getCode(), request.getNewPassword());
             return ResponseEntity.ok(new ResponseDTO(true, "Contrasena actualizada", null));
@@ -115,13 +123,16 @@ public class AuthController {
     }
 
     private LoginResponseDTO crearLoginResponse(Usuario usuario) {
+        String rol = rolService.normalizarNombreRol(usuario.getRol().getNombre());
+        String token = jwtUtil.generarToken(usuario.getId(), usuario.getEmail(), rol);
+
         return LoginResponseDTO.builder()
-                .token("JWT_TOKEN_" + usuario.getId())
+                .token(token)
                 .usuarioId(usuario.getId())
                 .nombre(usuario.getNombre())
                 .apellido(usuario.getApellido())
                 .email(usuario.getEmail())
-                .rol(rolService.normalizarNombreRol(usuario.getRol().getNombre()))
+                .rol(rol)
                 .build();
     }
 }

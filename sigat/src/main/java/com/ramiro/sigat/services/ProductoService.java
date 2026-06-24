@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.ProductoDTO;
 import com.ramiro.sigat.models.Producto;
 import com.ramiro.sigat.repositories.ProductoRepository;
@@ -36,7 +38,7 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public ProductoDTO obtenerPorId(Long id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         return convertirADTO(producto);
     }
 
@@ -64,7 +66,7 @@ public class ProductoService {
     @Transactional
     public ProductoDTO actualizar(Long id, ProductoDTO dto) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         producto.setNombre(dto.getNombre());
         producto.setCodigo(dto.getCodigo());
         producto.setDescripcion(dto.getDescripcion());
@@ -81,7 +83,7 @@ public class ProductoService {
     @Transactional
     public void eliminar(Long id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         producto.setActivo(false);
         productoRepository.save(producto);
     }
@@ -89,7 +91,7 @@ public class ProductoService {
     @Transactional
     public void actualizarStock(Long id, Integer cantidad) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         producto.setStockActual(producto.getStockActual() + cantidad);
         productoRepository.save(producto);
     }

@@ -23,6 +23,10 @@ class ApiClient {
   final HttpClient _httpClient;
   String? authToken;
 
+  /// Se invoca cuando el backend responde 401 (token invalido/expirado),
+  /// para que la app pueda cerrar la sesion y volver al login.
+  void Function()? onUnauthorized;
+
   Future<Map<String, dynamic>> login(String email, String password) {
     return post('/auth/login', {'email': email, 'password': password});
   }
@@ -85,6 +89,9 @@ class ApiClient {
       final decoded = _decodeBody(rawBody);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
+        if (response.statusCode == 401) {
+          onUnauthorized?.call();
+        }
         throw ApiException(
           messageFromResponse(decoded) ?? 'Error HTTP ${response.statusCode}',
           statusCode: response.statusCode,

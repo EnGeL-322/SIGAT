@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.ClienteDTO;
 import com.ramiro.sigat.models.Cliente;
 import com.ramiro.sigat.repositories.ClienteRepository;
@@ -36,7 +38,7 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public ClienteDTO obtenerPorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
         return convertirADTO(cliente);
     }
 
@@ -57,7 +59,7 @@ public class ClienteService {
     @Transactional
     public ClienteDTO actualizar(Long id, ClienteDTO dto) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
         cliente.setNombre(dto.getNombre());
         cliente.setApellido(dto.getApellido());
         cliente.setEmail(dto.getEmail());
@@ -69,7 +71,7 @@ public class ClienteService {
     @Transactional
     public void eliminar(Long id) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
         cliente.setActivo(false);
         clienteRepository.save(cliente);
     }

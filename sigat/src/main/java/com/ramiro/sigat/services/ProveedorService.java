@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.ProveedorDTO;
 import com.ramiro.sigat.models.Proveedor;
 import com.ramiro.sigat.repositories.ProveedorRepository;
@@ -36,7 +38,7 @@ public class ProveedorService {
     @Transactional(readOnly = true)
     public ProveedorDTO obtenerPorId(Long id) {
         Proveedor proveedor = proveedorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado"));
         return convertirADTO(proveedor);
     }
 
@@ -57,7 +59,7 @@ public class ProveedorService {
     @Transactional
     public ProveedorDTO actualizar(Long id, ProveedorDTO dto) {
         Proveedor proveedor = proveedorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado"));
         proveedor.setNombre(dto.getNombre());
         proveedor.setEmail(dto.getEmail());
         proveedor.setTelefono(dto.getTelefono());
@@ -69,7 +71,7 @@ public class ProveedorService {
     @Transactional
     public void eliminar(Long id) {
         Proveedor proveedor = proveedorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado"));
         proveedor.setActivo(false);
         proveedorRepository.save(proveedor);
     }

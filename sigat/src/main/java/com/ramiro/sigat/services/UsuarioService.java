@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.UsuarioDTO;
 import com.ramiro.sigat.models.Rol;
 import com.ramiro.sigat.models.Usuario;
@@ -48,9 +50,29 @@ public class UsuarioService {
         }
 
         Rol rol = rolRepository.findById(dto.getRolId())
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
         validarRolPermitido(rol);
         usuario.setRol(rol);
+
+        return convertirADTO(usuarioRepository.saveAndFlush(usuario));
+    }
+
+    /**
+     * Registro publico (sin sesion). Ignora cualquier rolId enviado por el
+     * cliente y siempre asigna el rol de menor privilegio en el servidor.
+     */
+    @Transactional
+    public UsuarioDTO registrarPublico(UsuarioDTO dto) {
+        String email = normalizarEmail(dto.getEmail());
+        validarEmailDisponible(email, null);
+
+        Usuario usuario = new Usuario();
+        usuario.setEmail(email);
+        usuario.setNombre(requerido(dto.getNombre(), "El nombre"));
+        usuario.setApellido(requerido(dto.getApellido(), "El apellido"));
+        usuario.setPassword(passwordEncoder.encode(validarPasswordNueva(dto.getPassword())));
+        usuario.setActivo(true);
+        usuario.setRol(rolService.obtenerRolPorDefecto());
 
         return convertirADTO(usuarioRepository.saveAndFlush(usuario));
     }
@@ -58,14 +80,14 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioDTO obtenerPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         return convertirADTO(usuario);
     }
 
     @Transactional(readOnly = true)
     public UsuarioDTO obtenerPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(normalizarEmail(email))
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         return convertirADTO(usuario);
     }
 
@@ -86,7 +108,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioDTO actualizar(Long id, UsuarioDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         String email = normalizarEmail(dto.getEmail());
         validarEmailDisponible(email, id);
 
@@ -100,7 +122,7 @@ public class UsuarioService {
 
         if (dto.getRolId() != null) {
             Rol rol = rolRepository.findById(dto.getRolId())
-                    .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
             validarRolPermitido(rol);
             usuario.setRol(rol);
         }
@@ -111,7 +133,7 @@ public class UsuarioService {
     @Transactional
     public void eliminar(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
     }

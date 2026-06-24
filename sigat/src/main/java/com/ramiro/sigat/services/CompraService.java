@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.CompraDTO;
 import com.ramiro.sigat.dto.DetalleCompraDTO;
 import com.ramiro.sigat.dto.IMEIDTO;
@@ -53,7 +55,7 @@ public class CompraService {
         }
 
         Proveedor proveedor = proveedorRepository.findById(dto.getProveedorId())
-                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado"));
 
         Compra compra = new Compra();
         compra.setNumeroCompra(generarNumeroCompra());
@@ -69,7 +71,7 @@ public class CompraService {
             validarDetalle(detalleDto);
 
             Producto producto = productoRepository.findById(detalleDto.getProductoId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 
             DetalleCompra detalle = new DetalleCompra();
             detalle.setCompra(compra);
@@ -103,7 +105,7 @@ public class CompraService {
     @Transactional(readOnly = true)
     public CompraDTO obtenerPorId(Long id) {
         Compra compra = compraRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
         return convertirADTO(compra);
     }
 
@@ -131,7 +133,7 @@ public class CompraService {
     @Transactional
     public void eliminar(Long compraId) {
         Compra compra = compraRepository.findById(compraId)
-                .orElseThrow(() -> new RuntimeException("Compra no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Compra no encontrada"));
         List<IMEI> imeis = imeiRepository.findByCompraId(compraId);
 
         boolean tieneImeisVendidos = imeis.stream()

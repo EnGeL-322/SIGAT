@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../network/api_client.dart';
 
@@ -46,16 +50,35 @@ class SessionController extends ChangeNotifier {
   SessionController(this.api);
 
   final ApiClient api;
+  static const _storage = FlutterSecureStorage();
+  static const _sessionKey = 'sigat_session';
 
   AuthUser? _user;
   bool _busy = false;
+  bool _restoring = true;
   String? _error;
 
   AuthUser? get user => _user;
   bool get isAuthenticated => _user != null && _user!.token.isNotEmpty;
   bool get isAdmin => _user?.isAdmin ?? false;
   bool get isBusy => _busy;
+  bool get isRestoring => _restoring;
   String? get error => _error;
+
+  /// Intenta recuperar una sesion guardada (p. ej. al reabrir la app).
+  Future<void> restoreSession() async {
+    try {
+      final raw = await _storage.read(key: _sessionKey);
+      if (raw != null) {
+        _setUser(AuthUser.fromMap(jsonDecode(raw) as Map<String, dynamic>));
+      }
+    } catch (_) {
+      await _storage.delete(key: _sessionKey);
+    } finally {
+      _restoring = false;
+      notifyListeners();
+    }
+  }
 
   Future<bool> login(String email, String password) async {
     return _run(() async {
@@ -106,6 +129,7 @@ class SessionController extends ChangeNotifier {
     _user = null;
     api.authToken = null;
     notifyListeners();
+    unawaited(_storage.delete(key: _sessionKey));
   }
 
   Future<bool> _run(Future<bool> Function() action) async {
@@ -130,6 +154,16 @@ class SessionController extends ChangeNotifier {
   void _setUser(AuthUser user) {
     _user = user;
     api.authToken = user.token;
+    unawaited(_storage.write(
+      key: _sessionKey,
+      value: jsonEncode({
+        'token': user.token,
+        'usuarioId': user.usuarioId,
+        'nombre': user.nombre,
+        'email': user.email,
+        'rol': user.rol,
+      }),
+    ));
   }
 }
 

@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.DetalleVentaDTO;
 import com.ramiro.sigat.dto.VentaDTO;
 import com.ramiro.sigat.models.Cliente;
@@ -50,7 +52,7 @@ public class VentaService {
         }
 
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
 
         Venta venta = new Venta();
         venta.setNumeroVenta(generarNumeroVenta());
@@ -67,7 +69,7 @@ public class VentaService {
             validarDetalle(detalleDto);
 
             Producto producto = productoRepository.findById(detalleDto.getProductoId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 
             List<IMEI> imeis = obtenerImeisParaVenta(detalleDto, producto);
 
@@ -101,7 +103,7 @@ public class VentaService {
     @Transactional(readOnly = true)
     public VentaDTO obtenerPorId(Long id) {
         Venta venta = ventaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
         return convertirADTO(venta);
     }
 
@@ -129,7 +131,7 @@ public class VentaService {
     @Transactional
     public void eliminar(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId)
-                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
         List<DetalleVenta> detalles = detalleVentaRepository.findByVentaId(ventaId);
 
         for (DetalleVenta detalle : detalles) {
@@ -171,7 +173,7 @@ public class VentaService {
     private List<IMEI> obtenerImeisParaVenta(DetalleVentaDTO detalleDto, Producto producto) {
         if (detalleDto.getImeiId() != null) {
             IMEI imei = imeiRepository.findById(detalleDto.getImeiId())
-                    .orElseThrow(() -> new RuntimeException("IMEI no encontrado"));
+                    .orElseThrow(() -> new ResourceNotFoundException("IMEI no encontrado"));
             if (imei.getEstado() != IMEI.EstadoIMEI.EN_STOCK) {
                 throw new RuntimeException("El IMEI seleccionado no esta disponible");
             }

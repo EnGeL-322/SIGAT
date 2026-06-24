@@ -24,12 +24,15 @@ class SigatApp extends StatefulWidget {
 class _SigatAppState extends State<SigatApp> {
   late final ApiClient _api;
   late final SessionController _session;
+  final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
     _api = ApiClient();
     _session = SessionController(_api);
+    _api.onUnauthorized = _handleUnauthorized;
+    _session.restoreSession();
   }
 
   @override
@@ -39,6 +42,15 @@ class _SigatAppState extends State<SigatApp> {
     super.dispose();
   }
 
+  void _handleUnauthorized() {
+    if (!_session.isAuthenticated) return;
+    _session.logout();
+    _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/login',
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SessionScope(
@@ -46,10 +58,21 @@ class _SigatAppState extends State<SigatApp> {
       child: AnimatedBuilder(
         animation: _session,
         builder: (context, _) {
+          if (_session.isRestoring) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light(),
+              home: const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+
           return MaterialApp(
             title: 'SIGAT Movil',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
+            navigatorKey: _navigatorKey,
             onGenerateRoute: _route,
           );
         },

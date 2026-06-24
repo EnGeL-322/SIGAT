@@ -113,7 +113,6 @@ class _RegisterPageState extends State<RegisterPage> {
       'apellido': _apellidoController.text.trim(),
       'email': _emailController.text.trim(),
       'password': _passwordController.text,
-      'rolId': 1,
     });
 
     if (!context.mounted) return;

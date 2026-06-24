@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.IMEIDTO;
 import com.ramiro.sigat.models.Cliente;
 import com.ramiro.sigat.models.Compra;
@@ -34,7 +36,7 @@ public class IMEIService {
         }
 
         Producto producto = productoRepository.findById(dto.getProductoId())
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 
         IMEI imei = new IMEI();
         imei.setNumero(dto.getNumero());
@@ -46,14 +48,14 @@ public class IMEIService {
     @Transactional(readOnly = true)
     public IMEIDTO obtenerPorId(Long id) {
         IMEI imei = imeiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("IMEI no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("IMEI no encontrado"));
         return convertirADTO(imei);
     }
 
     @Transactional(readOnly = true)
     public IMEIDTO obtenerPorNumero(String numero) {
         IMEI imei = imeiRepository.findByNumero(numero)
-                .orElseThrow(() -> new RuntimeException("IMEI no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("IMEI no encontrado"));
         return convertirADTO(imei);
     }
 
@@ -68,7 +70,7 @@ public class IMEIService {
     @Transactional
     public List<IMEIDTO> listarPorProducto(Long productoId) {
         Producto producto = productoRepository.findById(productoId)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         generarImeisFaltantes(producto);
         return imeiRepository.findByProductoId(productoId).stream()
                 .map(this::convertirADTO)
@@ -108,7 +110,7 @@ public class IMEIService {
     @Transactional
     public IMEIDTO marcarVendido(Long id, Long clienteId) {
         IMEI imei = imeiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("IMEI no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("IMEI no encontrado"));
         imei.setEstado(IMEI.EstadoIMEI.VENDIDO);
         imei.setClienteId(clienteId);
         imei.setFechaVenta(LocalDateTime.now());

@@ -35,28 +35,31 @@ public class PasswordResetService {
         this.emailService = emailService;
     }
 
+    /**
+     * Siempre responde igual exista o no el correo, para no permitir
+     * enumeracion de cuentas registradas desde el endpoint publico.
+     */
     @Transactional
     public void solicitarCodigo(String email) {
         resetCodeRepository.deleteByExpiresAtBefore(LocalDateTime.now());
 
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo"));
+        usuarioRepository.findByEmail(email).ifPresent(usuario -> {
+            resetCodeRepository.findByUsuarioIdAndUsadoFalse(usuario.getId()).forEach(code -> {
+                code.setUsado(true);
+                resetCodeRepository.save(code);
+            });
 
-        resetCodeRepository.findByUsuarioIdAndUsadoFalse(usuario.getId()).forEach(code -> {
-            code.setUsado(true);
-            resetCodeRepository.save(code);
+            String code = generarCodigo();
+            PasswordResetCode resetCode = PasswordResetCode.builder()
+                    .usuario(usuario)
+                    .codeHash(passwordEncoder.encode(code))
+                    .expiresAt(LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES))
+                    .usado(false)
+                    .build();
+
+            resetCodeRepository.save(resetCode);
+            emailService.enviarCodigoRecuperacion(usuario.getEmail(), code);
         });
-
-        String code = generarCodigo();
-        PasswordResetCode resetCode = PasswordResetCode.builder()
-                .usuario(usuario)
-                .codeHash(passwordEncoder.encode(code))
-                .expiresAt(LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES))
-                .usado(false)
-                .build();
-
-        resetCodeRepository.save(resetCode);
-        emailService.enviarCodigoRecuperacion(usuario.getEmail(), code);
     }
 
     @Transactional

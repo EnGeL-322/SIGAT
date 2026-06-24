@@ -72,12 +72,13 @@ public class FacebookAuthService {
 
     /**
      * Verifica que el token pertenezca a esta app usando el endpoint debug_token.
-     * Requiere el app secret. Si no esta configurado, se omite (el /me valida el token).
+     * Requiere el app secret: si no esta configurado, se rechaza el login
+     * (fail-closed) en vez de aceptar cualquier access token sin validar.
      */
     @SuppressWarnings("unchecked")
     private void verificarToken(String accessToken) {
         if (facebookAppSecret == null || facebookAppSecret.isBlank()) {
-            return;
+            throw new RuntimeException("Configura app.facebookAppSecret para iniciar sesion con Facebook");
         }
 
         String appToken = facebookAppId + "|" + facebookAppSecret;

@@ -1,5 +1,7 @@
 package com.ramiro.sigat.services;
 
+import com.ramiro.sigat.exceptions.ResourceNotFoundException;
+
 import com.ramiro.sigat.dto.RolDTO;
 import com.ramiro.sigat.models.Rol;
 import com.ramiro.sigat.repositories.RolRepository;
@@ -47,12 +49,23 @@ public class RolService {
     @Transactional(readOnly = true)
     public RolDTO obtenerPorId(Long id) {
         Rol rol = rolRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
         return convertirADTO(rol);
     }
 
     public boolean esRolPermitido(Rol rol) {
         return rol != null && normalizarNombreRol(rol.getNombre()) != null;
+    }
+
+    /**
+     * Rol de menor privilegio asignado a registros publicos, sin importar
+     * lo que el cliente haya enviado (evita escalada de privilegios).
+     */
+    public Rol obtenerRolPorDefecto() {
+        return rolRepository.findAll().stream()
+                .filter(rol -> "TRABAJADOR".equals(normalizarNombreRol(rol.getNombre())))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Crea el rol TRABAJADOR antes de registrar usuarios"));
     }
 
     public String normalizarNombreRol(String nombre) {

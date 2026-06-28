@@ -2,6 +2,7 @@ package com.ramiro.sigat.services;
 
 import com.ramiro.sigat.exceptions.ResourceNotFoundException;
 
+import com.ramiro.sigat.dto.CompraConDetallesDTO;
 import com.ramiro.sigat.dto.CompraDTO;
 import com.ramiro.sigat.dto.DetalleCompraDTO;
 import com.ramiro.sigat.dto.IMEIDTO;
@@ -25,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class CompraService {
@@ -33,6 +35,7 @@ public class CompraService {
     private final ProveedorRepository proveedorRepository;
     private final ProductoRepository productoRepository;
     private final IMEIRepository imeiRepository;
+    private final AtomicLong contadorCompra;
 
     public CompraService(
             CompraRepository compraRepository,
@@ -46,6 +49,7 @@ public class CompraService {
         this.proveedorRepository = proveedorRepository;
         this.productoRepository = productoRepository;
         this.imeiRepository = imeiRepository;
+        this.contadorCompra = new AtomicLong(compraRepository.count());
     }
 
     @Transactional
@@ -130,6 +134,21 @@ public class CompraService {
                 .toList();
     }
 
+    /**
+     * Igual que listarTodas(), pero incluye el detalle de cada compra en la
+     * misma respuesta para que un cliente de reportes no tenga que pedir
+     * el detalle compra por compra (evita N+1 peticiones HTTP).
+     */
+    @Transactional(readOnly = true)
+    public List<CompraConDetallesDTO> listarTodasConDetalles() {
+        return compraRepository.findAll().stream()
+                .map(compra -> CompraConDetallesDTO.builder()
+                        .compra(convertirADTO(compra))
+                        .detalles(obtenerDetalles(compra.getId()))
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public void eliminar(Long compraId) {
         Compra compra = compraRepository.findById(compraId)
@@ -155,8 +174,13 @@ public class CompraService {
         compraRepository.delete(compra);
     }
 
+    /**
+     * Numero atomico en memoria: dos compras concurrentes nunca obtienen el
+     * mismo valor (a diferencia de leer count()+1, que es una condicion de
+     * carrera entre el SELECT y el INSERT de cada transaccion).
+     */
     private String generarNumeroCompra() {
-        return "CMP-" + (compraRepository.count() + 1);
+        return "CMP-" + contadorCompra.incrementAndGet();
     }
 
     private void validarDetalle(DetalleCompraDTO detalleDto) {

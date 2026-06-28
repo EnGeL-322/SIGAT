@@ -2,8 +2,9 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, forkJoin, map, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../../../core/api.service';
+import { escapeHtml } from '../../../utils/html-escape';
 
 type PeriodoReporte = 'DIA' | 'SEMANA' | 'MES';
 
@@ -40,7 +41,7 @@ export class ReporteVentasComponent implements OnInit {
   ngOnInit(): void {
     this.loading = true;
     forkJoin({
-      ventas: this.api.obtenerVentas().pipe(catchError(() => of({ datos: [] }))),
+      ventas: this.api.obtenerVentasConDetalles().pipe(catchError(() => of({ datos: [] }))),
       clientes: this.api.obtenerClientes().pipe(catchError(() => of({ datos: [] }))),
       productos: this.api.obtenerProductos().pipe(catchError(() => of({ datos: [] })))
     }).subscribe((res: any) => {
@@ -149,42 +150,27 @@ export class ReporteVentasComponent implements OnInit {
     this.imprimirReporte('Reporte de ventas', this.filtrados);
   }
 
+  /** El backend ya devuelve venta + detalles en una sola respuesta (sin N+1). */
   private cargarDetalles(): void {
-    if (!this.ventas.length) {
-      this.filas = [];
-      this.filtrar();
-      this.loading = false;
-      this.cdr.detectChanges();
-      return;
-    }
-
-    const requests = this.ventas.map(venta =>
-      this.api.obtenerDetallesVenta(venta.id).pipe(
-        map((res: any) => {
-          const detalles = res?.datos || [];
-          return {
-            id: venta.id,
-            codigoVenta: venta.numeroVenta,
-            fechaVenta: venta.fechaVenta,
-            clienteId: venta.clienteId,
-            clienteNombre: venta.clienteNombre,
-            vendedorNombre: venta.vendedorNombre || 'SIGAT',
-            estado: venta.estado,
-            total: venta.total ?? detalles.reduce((s: number, d: any) => s + Number(d.subtotal || d.precioUnitario || 0), 0),
-            detalles,
-            cantidadEquipos: detalles.length
-          };
-        }),
-        catchError(() => of(null))
-      )
-    );
-
-    forkJoin(requests).subscribe((filas: any[]) => {
-      this.filas = filas.filter(Boolean);
-      this.filtrar();
-      this.loading = false;
-      this.cdr.detectChanges();
+    this.filas = this.ventas.map((item: any) => {
+      const venta = item.venta || {};
+      const detalles = item.detalles || [];
+      return {
+        id: venta.id,
+        codigoVenta: venta.numeroVenta,
+        fechaVenta: venta.fechaVenta,
+        clienteId: venta.clienteId,
+        clienteNombre: venta.clienteNombre,
+        vendedorNombre: venta.vendedorNombre || 'SIGAT',
+        estado: venta.estado,
+        total: venta.total ?? detalles.reduce((s: number, d: any) => s + Number(d.subtotal || d.precioUnitario || 0), 0),
+        detalles,
+        cantidadEquipos: detalles.length
+      };
     });
+    this.filtrar();
+    this.loading = false;
+    this.cdr.detectChanges();
   }
 
   private estaEnPeriodo(fechaVenta: string): boolean {
@@ -229,7 +215,7 @@ export class ReporteVentasComponent implements OnInit {
   }
 
   private descargarExcel(nombre: string, rows: any[][]): void {
-    const htmlRows = rows.map(row => `<tr>${row.map(col => `<td>${col ?? ''}</td>`).join('')}</tr>`).join('');
+    const htmlRows = rows.map(row => `<tr>${row.map(col => `<td>${escapeHtml(col)}</td>`).join('')}</tr>`).join('');
     const html = `
       <table>
         <thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Equipos</th><th>Total</th><th>IMEI</th></tr></thead>
@@ -248,23 +234,23 @@ export class ReporteVentasComponent implements OnInit {
     const total = filas.reduce((sum, fila) => sum + Number(fila.total || 0), 0);
     const htmlRows = filas.map(fila => `
       <tr>
-        <td>${fila.codigoVenta ?? ''}</td>
-        <td>${this.formatearFecha(fila.fechaVenta)}</td>
-        <td>${fila.clienteNombre ?? ''}</td>
-        <td>${fila.cantidadEquipos ?? ''}</td>
+        <td>${escapeHtml(fila.codigoVenta)}</td>
+        <td>${escapeHtml(this.formatearFecha(fila.fechaVenta))}</td>
+        <td>${escapeHtml(fila.clienteNombre)}</td>
+        <td>${escapeHtml(fila.cantidadEquipos)}</td>
         <td>S/ ${Number(fila.total || 0).toFixed(2)}</td>
-        <td>${(fila.detalles || []).map((d: any) => d.imeiNumero).filter(Boolean).join(', ')}</td>
+        <td>${escapeHtml((fila.detalles || []).map((d: any) => d.imeiNumero).filter(Boolean).join(', '))}</td>
       </tr>
     `).join('');
     const win = window.open('', '_blank');
     win?.document.write(`
-      <html><head><title>${titulo}</title><style>
+      <html><head><title>${escapeHtml(titulo)}</title><style>
         body{font-family:Arial,sans-serif;padding:24px;color:#1f2937}
         table{width:100%;border-collapse:collapse} th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}
         th{background:#7d82ef;color:white}
       </style></head><body>
-      <h1>${titulo}</h1>
-      <p>Fecha base: ${this.fecha || 'Todas'}</p>
+      <h1>${escapeHtml(titulo)}</h1>
+      <p>Fecha base: ${escapeHtml(this.fecha || 'Todas')}</p>
       <p>Total vendido: S/ ${total.toFixed(2)}</p>
       <table><thead><tr><th>Codigo venta</th><th>Fecha</th><th>Cliente</th><th>Equipos</th><th>Total</th><th>IMEI</th></tr></thead><tbody>${htmlRows}</tbody></table>
       </body></html>

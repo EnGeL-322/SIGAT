@@ -7,6 +7,7 @@ import com.ramiro.sigat.models.Rol;
 import com.ramiro.sigat.models.Usuario;
 import com.ramiro.sigat.repositories.RolRepository;
 import com.ramiro.sigat.repositories.UsuarioRepository;
+import com.ramiro.sigat.util.PasswordPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -186,8 +187,8 @@ public class UsuarioService {
 
     private String validarPasswordNueva(String password) {
         String valor = requerido(password, "La contrasena");
-        if (valor.length() < 6) {
-            throw new RuntimeException("La contrasena debe tener al menos 6 caracteres");
+        if (!PasswordPolicy.cumpleLongitudMinima(valor)) {
+            throw new RuntimeException("La contrasena debe tener al menos " + PasswordPolicy.MIN_LENGTH + " caracteres");
         }
         return valor;
     }

@@ -10,4 +10,5 @@ import java.util.List;
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     Optional<Cliente> findByCedula(String cedula);
     List<Cliente> findByActivo(Boolean activo);
+    long countByActivo(Boolean activo);
 }

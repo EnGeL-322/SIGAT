@@ -4,6 +4,7 @@ import com.ramiro.sigat.models.PasswordResetCode;
 import com.ramiro.sigat.models.Usuario;
 import com.ramiro.sigat.repositories.PasswordResetCodeRepository;
 import com.ramiro.sigat.repositories.UsuarioRepository;
+import com.ramiro.sigat.util.PasswordPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,18 +22,21 @@ public class PasswordResetService {
     private final PasswordResetCodeRepository resetCodeRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final PasswordResetAttemptLimiter attemptLimiter;
     private final SecureRandom random = new SecureRandom();
 
     public PasswordResetService(
             UsuarioRepository usuarioRepository,
             PasswordResetCodeRepository resetCodeRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService
+            EmailService emailService,
+            PasswordResetAttemptLimiter attemptLimiter
     ) {
         this.usuarioRepository = usuarioRepository;
         this.resetCodeRepository = resetCodeRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.attemptLimiter = attemptLimiter;
     }
 
     /**
@@ -64,8 +68,10 @@ public class PasswordResetService {
 
     @Transactional
     public void restablecerPassword(String email, String code, String newPassword) {
-        if (newPassword == null || newPassword.length() < 6) {
-            throw new RuntimeException("La nueva contrasena debe tener al menos 6 caracteres");
+        attemptLimiter.registrarIntento(email);
+
+        if (!PasswordPolicy.cumpleLongitudMinima(newPassword)) {
+            throw new RuntimeException("La nueva contrasena debe tener al menos " + PasswordPolicy.MIN_LENGTH + " caracteres");
         }
 
         PasswordResetCode resetCode = resetCodeRepository
@@ -88,6 +94,7 @@ public class PasswordResetService {
 
         resetCode.setUsado(true);
         resetCodeRepository.save(resetCode);
+        attemptLimiter.reiniciar(email);
     }
 
     private String generarCodigo() {

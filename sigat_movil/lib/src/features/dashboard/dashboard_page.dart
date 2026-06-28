@@ -141,18 +141,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       final api = SessionScope.read(context).api;
-      final results = await Future.wait([
-        api.list('/productos'),
-        api.list('/proveedores'),
-        api.list('/clientes'),
-        api.list('/ventas'),
-      ]);
+      final response = await api.get('/dashboard/stats');
+      final stats = ApiClient.mapFromResponse(response);
       if (!mounted) return;
       setState(() {
-        _stats['productos'] = results[0].length;
-        _stats['proveedores'] = results[1].length;
-        _stats['clientes'] = results[2].length;
-        _stats['ventas'] = results[3].length;
+        _stats['productos'] = _asInt(stats['productos']);
+        _stats['proveedores'] = _asInt(stats['proveedores']);
+        _stats['clientes'] = _asInt(stats['clientes']);
+        _stats['ventas'] = _asInt(stats['ventas']);
       });
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
@@ -160,6 +156,12 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) setState(() => _loading = false);
     }
   }
+}
+
+int _asInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 class _StatsGrid extends StatelessWidget {

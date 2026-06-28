@@ -10,5 +10,6 @@ import java.util.List;
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByCodigo(String codigo);
     List<Producto> findByActivo(Boolean activo);
+    long countByActivo(Boolean activo);
     List<Producto> findByStockActualLessThan(Integer stockMinimo);
 }

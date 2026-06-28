@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../../core/api.service';
+import { extractError } from '../../../utils/extract-error';
 
 @Component({
   selector: 'app-compras-list',
@@ -35,7 +36,7 @@ export class ComprasListComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudieron cargar las compras');
+        this.error = extractError(err, 'No se pudieron cargar las compras');
         this.cdr.detectChanges();
       }
     });
@@ -51,7 +52,7 @@ export class ComprasListComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudo cargar el detalle de la compra');
+        this.error = extractError(err, 'No se pudo cargar el detalle de la compra');
         this.cdr.detectChanges();
       }
     });
@@ -90,13 +91,9 @@ export class ComprasListComponent implements OnInit {
         this.load();
       },
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudo eliminar la compra');
+        this.error = extractError(err, 'No se pudo eliminar la compra');
         this.cdr.detectChanges();
       }
     });
-  }
-
-  private extractError(err: any, fallback: string): string {
-    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

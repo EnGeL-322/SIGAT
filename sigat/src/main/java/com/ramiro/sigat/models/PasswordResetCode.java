@@ -9,11 +9,13 @@ import java.time.LocalDateTime;
 @Table(name = "password_reset_codes")
 @Getter
 @Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class PasswordResetCode {
 
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

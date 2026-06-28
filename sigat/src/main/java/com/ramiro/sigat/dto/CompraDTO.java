@@ -1,4 +1,5 @@
 package com.ramiro.sigat.dto;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 @Getter
 @Setter
@@ -8,6 +9,7 @@ import lombok.*;
 public class CompraDTO {
     private Long id;
     private String numeroCompra;
+    @NotNull(message = "Debe seleccionar un proveedor")
     private Long proveedorId;
     private String proveedorNombre;
     private Double total;

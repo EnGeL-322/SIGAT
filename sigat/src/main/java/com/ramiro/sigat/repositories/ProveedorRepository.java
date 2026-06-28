@@ -8,4 +8,5 @@ import java.util.List;
 public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
     Optional<Proveedor> findByRuc(String ruc);
     List<Proveedor> findByActivo(Boolean activo);
+    long countByActivo(Boolean activo);
 }

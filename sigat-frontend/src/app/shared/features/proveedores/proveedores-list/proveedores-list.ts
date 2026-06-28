@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/api.service';
+import { extractError } from '../../../utils/extract-error';
 
 @Component({
   selector: 'app-proveedores-list',
@@ -91,7 +92,7 @@ export class ProveedoresListComponent implements OnInit {
           this.load();
         },
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo actualizar el proveedor');
+          this.error = extractError(err, 'No se pudo actualizar el proveedor');
           this.cdr.detectChanges();
         }
       });
@@ -102,7 +103,7 @@ export class ProveedoresListComponent implements OnInit {
           this.load();
         },
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo crear el proveedor');
+          this.error = extractError(err, 'No se pudo crear el proveedor');
           this.cdr.detectChanges();
         }
       });
@@ -116,13 +117,9 @@ export class ProveedoresListComponent implements OnInit {
     this.api.eliminarProveedor(id).subscribe({
       next: () => this.load(),
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudo eliminar el proveedor');
+        this.error = extractError(err, 'No se pudo eliminar el proveedor');
         this.cdr.detectChanges();
       }
     });
-  }
-
-  private extractError(err: any, fallback: string): string {
-    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

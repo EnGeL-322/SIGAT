@@ -71,11 +71,11 @@ public class RolService {
     public String normalizarNombreRol(String nombre) {
         String normalizado = normalizarTexto(nombre);
 
-        if (normalizado.contains("ADMIN")) {
+        if (normalizado.equals("ADMIN")) {
             return "ADMIN";
         }
 
-        if (normalizado.contains("TRABAJADOR") || normalizado.contains("VENDEDOR") || normalizado.contains("GERENTE")) {
+        if (normalizado.equals("TRABAJADOR") || normalizado.equals("VENDEDOR") || normalizado.equals("GERENTE")) {
             return "TRABAJADOR";
         }
 

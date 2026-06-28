@@ -1,12 +1,13 @@
 import { ApplicationRef, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8081/api';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient, private appRef: ApplicationRef) {}
 
@@ -118,6 +119,10 @@ export class ApiService {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/compras/${compraId}/detalles`));
   }
 
+  obtenerComprasConDetalles(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/compras/con-detalles`));
+  }
+
   eliminarCompra(id: number): Observable<any> {
     return this.refreshAfter(this.http.delete(`${this.apiUrl}/compras/${id}`));
   }
@@ -132,6 +137,10 @@ export class ApiService {
 
   obtenerDetallesVenta(ventaId: number): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/ventas/${ventaId}/detalles`));
+  }
+
+  obtenerVentasConDetalles(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/ventas/con-detalles`));
   }
 
   crearVenta(payload: any): Observable<any> {
@@ -180,6 +189,10 @@ export class ApiService {
 
   obtenerRoles(): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/roles`));
+  }
+
+  obtenerDashboardStats(): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/dashboard/stats`));
   }
 
   private refreshAfter<T>(request$: Observable<T>): Observable<T> {

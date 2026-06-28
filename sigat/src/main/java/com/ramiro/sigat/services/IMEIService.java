@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class IMEIService {
@@ -59,27 +57,25 @@ public class IMEIService {
         return convertirADTO(imei);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<IMEIDTO> listarTodos() {
-        productoRepository.findAll().forEach(this::generarImeisFaltantes);
         return imeiRepository.findAll().stream()
                 .map(this::convertirADTO)
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<IMEIDTO> listarPorProducto(Long productoId) {
-        Producto producto = productoRepository.findById(productoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
-        generarImeisFaltantes(producto);
+        if (!productoRepository.existsById(productoId)) {
+            throw new ResourceNotFoundException("Producto no encontrado");
+        }
         return imeiRepository.findByProductoId(productoId).stream()
                 .map(this::convertirADTO)
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<IMEIDTO> listarEnStock() {
-        productoRepository.findAll().forEach(this::generarImeisFaltantes);
         return imeiRepository.findByEstado(IMEI.EstadoIMEI.EN_STOCK).stream()
                 .map(this::convertirADTO)
                 .toList();
@@ -115,34 +111,6 @@ public class IMEIService {
         imei.setClienteId(clienteId);
         imei.setFechaVenta(LocalDateTime.now());
         return convertirADTO(imeiRepository.save(imei));
-    }
-
-    private void generarImeisFaltantes(Producto producto) {
-        int stockActual = Optional.ofNullable(producto.getStockActual()).orElse(0);
-        if (stockActual <= 0) {
-            return;
-        }
-
-        int imeisEnStock = imeiRepository
-                .findByProductoIdAndEstado(producto.getId(), IMEI.EstadoIMEI.EN_STOCK)
-                .size();
-        int faltantes = stockActual - imeisEnStock;
-
-        for (int i = 0; i < faltantes; i++) {
-            IMEI imei = new IMEI();
-            imei.setNumero(generarNumeroImei());
-            imei.setProducto(producto);
-            imei.setEstado(IMEI.EstadoIMEI.EN_STOCK);
-            imeiRepository.save(imei);
-        }
-    }
-
-    private String generarNumeroImei() {
-        String numero;
-        do {
-            numero = String.valueOf(100000000000000L + ThreadLocalRandom.current().nextLong(900000000000000L));
-        } while (imeiRepository.findByNumero(numero).isPresent());
-        return numero;
     }
 
     private IMEIDTO convertirADTO(IMEI imei) {

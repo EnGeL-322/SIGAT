@@ -3,6 +3,7 @@ package com.ramiro.sigat.services;
 import com.ramiro.sigat.exceptions.ResourceNotFoundException;
 
 import com.ramiro.sigat.dto.DetalleVentaDTO;
+import com.ramiro.sigat.dto.VentaConDetallesDTO;
 import com.ramiro.sigat.dto.VentaDTO;
 import com.ramiro.sigat.models.Cliente;
 import com.ramiro.sigat.models.DetalleVenta;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class VentaService {
@@ -27,22 +29,21 @@ public class VentaService {
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final IMEIRepository imeiRepository;
-    private final IMEIService imeiService;
+    private final AtomicLong contadorVenta;
 
     public VentaService(
             VentaRepository ventaRepository,
             DetalleVentaRepository detalleVentaRepository,
             ClienteRepository clienteRepository,
             ProductoRepository productoRepository,
-            IMEIRepository imeiRepository,
-            IMEIService imeiService
+            IMEIRepository imeiRepository
     ) {
         this.ventaRepository = ventaRepository;
         this.detalleVentaRepository = detalleVentaRepository;
         this.clienteRepository = clienteRepository;
         this.productoRepository = productoRepository;
         this.imeiRepository = imeiRepository;
-        this.imeiService = imeiService;
+        this.contadorVenta = new AtomicLong(ventaRepository.count());
     }
 
     @Transactional
@@ -128,6 +129,21 @@ public class VentaService {
                 .toList();
     }
 
+    /**
+     * Igual que listarTodas(), pero incluye el detalle de cada venta en la
+     * misma respuesta para que un cliente de reportes no tenga que pedir
+     * el detalle venta por venta (evita N+1 peticiones HTTP).
+     */
+    @Transactional(readOnly = true)
+    public List<VentaConDetallesDTO> listarTodasConDetalles() {
+        return ventaRepository.findAll().stream()
+                .map(venta -> VentaConDetallesDTO.builder()
+                        .venta(convertirADTO(venta))
+                        .detalles(obtenerDetalles(venta.getId()))
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public void eliminar(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId)
@@ -152,8 +168,13 @@ public class VentaService {
         ventaRepository.delete(venta);
     }
 
+    /**
+     * Numero atomico en memoria: dos ventas concurrentes nunca obtienen el
+     * mismo valor (a diferencia de leer count()+1, que es una condicion de
+     * carrera entre el SELECT y el INSERT de cada transaccion).
+     */
     private String generarNumeroVenta() {
-        return "VTA-" + (ventaRepository.count() + 1);
+        return "VTA-" + contadorVenta.incrementAndGet();
     }
 
     private void validarDetalle(DetalleVentaDTO detalleDto) {
@@ -172,7 +193,7 @@ public class VentaService {
 
     private List<IMEI> obtenerImeisParaVenta(DetalleVentaDTO detalleDto, Producto producto) {
         if (detalleDto.getImeiId() != null) {
-            IMEI imei = imeiRepository.findById(detalleDto.getImeiId())
+            IMEI imei = imeiRepository.findByIdForUpdate(detalleDto.getImeiId())
                     .orElseThrow(() -> new ResourceNotFoundException("IMEI no encontrado"));
             if (imei.getEstado() != IMEI.EstadoIMEI.EN_STOCK) {
                 throw new RuntimeException("El IMEI seleccionado no esta disponible");
@@ -180,9 +201,8 @@ public class VentaService {
             return List.of(imei);
         }
 
-        imeiService.listarPorProducto(producto.getId());
         List<IMEI> disponibles = imeiRepository
-                .findByProductoIdAndEstado(producto.getId(), IMEI.EstadoIMEI.EN_STOCK)
+                .findByProductoIdAndEstadoForUpdate(producto.getId(), IMEI.EstadoIMEI.EN_STOCK)
                 .stream()
                 .limit(detalleDto.getCantidad())
                 .toList();

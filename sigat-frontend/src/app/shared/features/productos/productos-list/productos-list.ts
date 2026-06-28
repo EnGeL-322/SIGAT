@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/api.service';
+import { extractError } from '../../../utils/extract-error';
 
 @Component({
   selector: 'app-productos-list',
@@ -112,7 +113,7 @@ export class ProductosListComponent implements OnInit {
           this.load();
         },
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo actualizar el producto');
+          this.error = extractError(err, 'No se pudo actualizar el producto');
           this.cdr.detectChanges();
         }
       });
@@ -123,7 +124,7 @@ export class ProductosListComponent implements OnInit {
           this.load();
         },
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo crear el producto');
+          this.error = extractError(err, 'No se pudo crear el producto');
           this.cdr.detectChanges();
         }
       });
@@ -137,7 +138,7 @@ export class ProductosListComponent implements OnInit {
     this.api.eliminarProducto(id).subscribe({
       next: () => this.load(),
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudo eliminar el producto');
+        this.error = extractError(err, 'No se pudo eliminar el producto');
         this.cdr.detectChanges();
       }
     });
@@ -153,9 +154,5 @@ export class ProductosListComponent implements OnInit {
     if (stock <= 0) return 'danger';
     if (stock <= 5) return 'warning';
     return 'success';
-  }
-
-  private extractError(err: any, fallback: string): string {
-    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 }

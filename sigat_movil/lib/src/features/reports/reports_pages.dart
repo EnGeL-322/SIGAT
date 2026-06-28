@@ -144,34 +144,36 @@ class _SalesReportPageState extends State<SalesReportPage> {
     try {
       final api = SessionScope.read(context).api;
       final result = await Future.wait([
-        api.list('/ventas'),
+        api.list('/ventas/con-detalles'),
         api.list('/clientes'),
         api.list('/productos'),
       ]);
-      final sales = result[0];
-      final rows = await Future.wait(
-        sales.map((sale) async {
-          final details = await api.list('/ventas/${sale['id']}/detalles');
-          final total =
-              sale['total'] ??
-              details.fold<num>(
-                0,
-                (sum, detail) =>
-                    sum + _asNum(detail['subtotal'] ?? detail['precioUnitario']),
-              );
-          return <String, dynamic>{
-            'id': sale['id'],
-            'codigoVenta': sale['numeroVenta'],
-            'fechaVenta': sale['fechaVenta'],
-            'clienteId': sale['clienteId'],
-            'clienteNombre': sale['clienteNombre'],
-            'vendedorNombre': sale['vendedorNombre'] ?? 'SIGAT',
-            'total': total,
-            'detalles': details,
-            'cantidadEquipos': details.length,
-          };
-        }),
-      );
+      final rows = result[0].map((item) {
+        final sale = item['venta'] is Map
+            ? Map<String, dynamic>.from(item['venta'] as Map)
+            : <String, dynamic>{};
+        final details = item['detalles'] is List
+            ? (item['detalles'] as List).whereType<Map>().toList()
+            : <Map>[];
+        final total =
+            sale['total'] ??
+            details.fold<num>(
+              0,
+              (sum, detail) =>
+                  sum + _asNum(detail['subtotal'] ?? detail['precioUnitario']),
+            );
+        return <String, dynamic>{
+          'id': sale['id'],
+          'codigoVenta': sale['numeroVenta'],
+          'fechaVenta': sale['fechaVenta'],
+          'clienteId': sale['clienteId'],
+          'clienteNombre': sale['clienteNombre'],
+          'vendedorNombre': sale['vendedorNombre'] ?? 'SIGAT',
+          'total': total,
+          'detalles': details,
+          'cantidadEquipos': details.length,
+        };
+      }).toList();
       if (!mounted) return;
       setState(() {
         _clients = result[1];
@@ -383,41 +385,43 @@ class _PurchasesReportPageState extends State<PurchasesReportPage> {
     try {
       final api = SessionScope.read(context).api;
       final result = await Future.wait([
-        api.list('/compras'),
+        api.list('/compras/con-detalles'),
         api.list('/proveedores'),
         api.list('/productos'),
       ]);
-      final purchases = result[0];
-      final rows = await Future.wait(
-        purchases.map((purchase) async {
-          final details = await api.list('/compras/${purchase['id']}/detalles');
-          final total =
-              purchase['total'] ??
-              details.fold<num>(
-                0,
-                (sum, detail) => sum + _asNum(detail['subtotal']),
-              );
-          final equipos = details.fold<num>(
-            0,
-            (sum, detail) => sum + _asNum(detail['cantidad']),
-          );
-          final imeis = details.fold<int>(0, (sum, detail) {
-            final list = detail['imeis'];
-            return sum + (list is List ? list.length : 0);
-          });
-          return <String, dynamic>{
-            'id': purchase['id'],
-            'codigoCompra': purchase['numeroCompra'],
-            'fechaCompra': purchase['fechaCompra'],
-            'proveedorId': purchase['proveedorId'],
-            'proveedorNombre': purchase['proveedorNombre'],
-            'total': total,
-            'detalles': details,
-            'cantidadEquipos': equipos.toInt(),
-            'totalImeis': imeis,
-          };
-        }),
-      );
+      final rows = result[0].map((item) {
+        final purchase = item['compra'] is Map
+            ? Map<String, dynamic>.from(item['compra'] as Map)
+            : <String, dynamic>{};
+        final details = item['detalles'] is List
+            ? (item['detalles'] as List).whereType<Map>().toList()
+            : <Map>[];
+        final total =
+            purchase['total'] ??
+            details.fold<num>(
+              0,
+              (sum, detail) => sum + _asNum(detail['subtotal']),
+            );
+        final equipos = details.fold<num>(
+          0,
+          (sum, detail) => sum + _asNum(detail['cantidad']),
+        );
+        final imeis = details.fold<int>(0, (sum, detail) {
+          final list = detail['imeis'];
+          return sum + (list is List ? list.length : 0);
+        });
+        return <String, dynamic>{
+          'id': purchase['id'],
+          'codigoCompra': purchase['numeroCompra'],
+          'fechaCompra': purchase['fechaCompra'],
+          'proveedorId': purchase['proveedorId'],
+          'proveedorNombre': purchase['proveedorNombre'],
+          'total': total,
+          'detalles': details,
+          'cantidadEquipos': equipos.toInt(),
+          'totalImeis': imeis,
+        };
+      }).toList();
       if (!mounted) return;
       setState(() {
         _providers = result[1];

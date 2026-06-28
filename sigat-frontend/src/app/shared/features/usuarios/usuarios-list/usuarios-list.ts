@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/api.service';
+import { extractError } from '../../../utils/extract-error';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -115,7 +116,7 @@ export class UsuariosListComponent implements OnInit {
       this.api.actualizarUsuario(this.editId, payload).subscribe({
         next: () => this.closeModalAndReload(),
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo actualizar el usuario');
+          this.error = extractError(err, 'No se pudo actualizar el usuario');
           this.cdr.markForCheck();
         }
       });
@@ -123,7 +124,7 @@ export class UsuariosListComponent implements OnInit {
       this.api.crearUsuario(payload).subscribe({
         next: () => this.closeModalAndReload(),
         error: (err) => {
-          this.error = this.extractError(err, 'No se pudo crear el usuario');
+          this.error = extractError(err, 'No se pudo crear el usuario');
           this.cdr.markForCheck();
         }
       });
@@ -137,7 +138,7 @@ export class UsuariosListComponent implements OnInit {
     this.api.eliminarUsuario(id).subscribe({
       next: () => this.load(),
       error: (err) => {
-        this.error = this.extractError(err, 'No se pudo eliminar el usuario');
+        this.error = extractError(err, 'No se pudo eliminar el usuario');
         this.cdr.markForCheck();
       }
     });
@@ -169,10 +170,6 @@ export class UsuariosListComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .toUpperCase()
       .trim();
-  }
-
-  private extractError(err: any, fallback: string): string {
-    return err?.error?.mensaje || err?.error?.message || err?.message || fallback;
   }
 
   private closeModalAndReload(): void {

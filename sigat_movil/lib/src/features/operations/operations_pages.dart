@@ -578,10 +578,14 @@ class _MovementFormPageState extends State<MovementFormPage> {
                                   createdParty.isEmpty ? payload : createdParty,
                                 );
                               } on ApiException catch (error) {
-                                setSheetState(() => formError = error.message);
-                              } finally {
+                                // No se rearma el sheet tras cerrarlo: evitaria
+                                // reconstruir TextField con controladores ya
+                                // liberados.
                                 if (sheetContext.mounted) {
-                                  setSheetState(() => saving = false);
+                                  setSheetState(() {
+                                    formError = error.message;
+                                    saving = false;
+                                  });
                                 }
                               }
                             },
@@ -603,9 +607,14 @@ class _MovementFormPageState extends State<MovementFormPage> {
       },
     );
 
-    for (final controller in controllers.values) {
-      controller.dispose();
-    }
+    // Se liberan los controladores tras la animacion de cierre de la hoja
+    // modal para no reconstruir un TextField con un controlador ya liberado.
+    final pendientes = controllers.values.toList();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      for (final controller in pendientes) {
+        controller.dispose();
+      }
+    });
 
     if (created != null && mounted) {
       await _reloadPartiesSelecting(created);

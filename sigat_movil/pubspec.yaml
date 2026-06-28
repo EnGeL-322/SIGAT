@@ -38,6 +38,11 @@ dependencies:
   # Almacenamiento seguro de la sesion (Keychain/Keystore) para persistir el token.
   flutter_secure_storage: ^9.2.4
 
+  # Base de datos local SQLite para el modo offline (cache de lecturas y cola
+  # de escrituras pendientes de sincronizar).
+  sqflite: ^2.4.1
+  path: ^1.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

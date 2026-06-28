@@ -229,7 +229,7 @@ class _EntityListPageState extends State<EntityListPage> {
     var saving = false;
     var formError = '';
 
-    await showModalBottomSheet<void>(
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -307,13 +307,21 @@ class _EntityListPageState extends State<EntityListPage> {
                                 if (!mounted || !sheetContext.mounted) {
                                   return;
                                 }
-                                Navigator.pop(sheetContext);
-                                await _load();
+                                // Cierra el sheet devolviendo "guardado". La
+                                // recarga de la lista se hace despues de cerrar
+                                // y liberar los controladores, para no rearmar
+                                // un TextField con su controller ya liberado.
+                                Navigator.pop(sheetContext, true);
                               } on ApiException catch (error) {
-                                setSheetState(() => formError = error.message);
-                              } finally {
+                                // Solo se rearma el estado del sheet si sigue
+                                // abierto (caso de error). Tras cerrarlo NO se
+                                // llama a setSheetState: rearmaria los TextField
+                                // cuyos controladores estan por liberarse.
                                 if (sheetContext.mounted) {
-                                  setSheetState(() => saving = false);
+                                  setSheetState(() {
+                                    formError = error.message;
+                                    saving = false;
+                                  });
                                 }
                               }
                             },
@@ -341,9 +349,24 @@ class _EntityListPageState extends State<EntityListPage> {
       },
     );
 
-    for (final controller in controllers.values) {
-      controller.dispose();
+    // La hoja modal sigue animando su cierre cuando este Future se completa
+    // (showModalBottomSheet retorna al hacer pop, no al terminar la animacion).
+    // Se liberan los controladores despues de esa animacion para no reconstruir
+    // los TextField con un controlador ya liberado.
+    _disposeAfterSheetClose(controllers.values);
+
+    if (saved == true && mounted) {
+      await _load();
     }
+  }
+
+  void _disposeAfterSheetClose(Iterable<TextEditingController> controllers) {
+    final pendientes = controllers.toList();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      for (final controller in pendientes) {
+        controller.dispose();
+      }
+    });
   }
 
   void _openDetail(Map<String, dynamic> item) {

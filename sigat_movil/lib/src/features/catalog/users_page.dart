@@ -178,7 +178,7 @@ class _UsersPageState extends State<UsersPage> {
     var saving = false;
     var formError = '';
 
-    await showModalBottomSheet<void>(
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -318,26 +318,19 @@ class _UsersPageState extends State<UsersPage> {
                                 if (!mounted || !sheetContext.mounted) {
                                   return;
                                 }
-                                Navigator.pop(sheetContext);
-                                await _load();
-                                if (mounted) {
-                                  ScaffoldMessenger.of(
-                                    this.context,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        isEdit
-                                            ? 'Usuario actualizado'
-                                            : 'Usuario creado',
-                                      ),
-                                    ),
-                                  );
-                                }
+                                // Cierra primero; recarga y aviso despues de
+                                // liberar los controladores (evita reconstruir
+                                // un TextField con su controller ya liberado).
+                                Navigator.pop(sheetContext, true);
                               } on ApiException catch (error) {
-                                setSheetState(() => formError = error.message);
-                              } finally {
+                                // No se llama a setSheetState tras cerrar el
+                                // sheet: rearmaria los TextField con sus
+                                // controladores ya en proceso de liberacion.
                                 if (sheetContext.mounted) {
-                                  setSheetState(() => saving = false);
+                                  setSheetState(() {
+                                    formError = error.message;
+                                    saving = false;
+                                  });
                                 }
                               }
                             },
@@ -365,10 +358,25 @@ class _UsersPageState extends State<UsersPage> {
       },
     );
 
-    nombre.dispose();
-    apellido.dispose();
-    email.dispose();
-    password.dispose();
+    // Se liberan los controladores tras la animacion de cierre de la hoja
+    // modal, no al instante, para no reconstruir un TextField ya liberado.
+    final pendientes = [nombre, apellido, email, password];
+    Future.delayed(const Duration(milliseconds: 350), () {
+      for (final controller in pendientes) {
+        controller.dispose();
+      }
+    });
+
+    if (saved == true && mounted) {
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEdit ? 'Usuario actualizado' : 'Usuario creado'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _confirmDelete(Map<String, dynamic> user) async {

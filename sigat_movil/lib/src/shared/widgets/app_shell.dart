@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/offline/sync_service.dart';
 import '../../core/session/session_controller.dart';
 import '../navigation/sigat_menu.dart';
 import '../theme/app_theme.dart';
@@ -92,6 +93,7 @@ class AppShell extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 12),
+                    const _OfflineBanner(),
                     Expanded(child: child),
                   ],
                 ),
@@ -99,6 +101,62 @@ class AppShell extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Aviso flotante que indica el modo sin conexion y los cambios pendientes
+/// de sincronizar. Se oculta solo cuando hay conexion y nada en cola.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final sync = SyncScope.maybeOf(context);
+    if (sync == null) return const SizedBox.shrink();
+
+    final offline = sync.isOffline;
+    final pending = sync.pendingCount;
+    if (!offline && pending == 0) return const SizedBox.shrink();
+
+    final color = offline ? const Color(0xFFB7791F) : AppTheme.blue;
+    final icon = sync.isSyncing
+        ? Icons.sync
+        : offline
+        ? Icons.cloud_off_outlined
+        : Icons.cloud_sync_outlined;
+
+    final parts = <String>[
+      if (offline) 'Sin conexion' else 'Conectado',
+      if (pending > 0)
+        '$pending cambio${pending == 1 ? '' : 's'} por sincronizar',
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.40)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              parts.join(' · '),
+              style: TextStyle(color: color, fontWeight: FontWeight.w800),
+            ),
+          ),
+          if (pending > 0 && !offline)
+            TextButton(
+              onPressed: sync.isSyncing ? null : () => sync.flush(),
+              child: Text(sync.isSyncing ? 'Sincronizando...' : 'Sincronizar'),
+            ),
+        ],
       ),
     );
   }

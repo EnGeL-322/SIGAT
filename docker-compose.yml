@@ -40,5 +40,15 @@ services:
       mysql:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./sigat-frontend
+    container_name: sigat_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
 volumes:
   sigat_mysql_data:

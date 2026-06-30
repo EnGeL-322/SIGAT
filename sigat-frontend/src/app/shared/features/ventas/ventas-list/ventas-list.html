@@ -20,7 +20,7 @@
       <span>Acciones</span>
     </div>
 
-    <div class="table-row grid-ventas" *ngFor="let item of ventas">
+    <div class="table-row grid-ventas" *ngFor="let item of ventasPaginadas">
       <span>{{ item.id }}</span>
       <span>{{ item.clienteNombre }}</span>
       <span>{{ item.numeroVenta }}</span>
@@ -30,6 +30,33 @@
         <button class="icon green" type="button" (click)="verDetalle(item)" aria-label="Ver detalle de venta">&#128065;</button>
         <button class="icon red" type="button" (click)="remove(item.id)" aria-label="Eliminar venta">&#128465;</button>
       </span>
+    </div>
+
+    <div class="empty-state" *ngIf="!ventas.length">
+      No hay ventas registradas.
+    </div>
+
+    <div class="report-pagination" *ngIf="ventas.length">
+      <span class="pagination-info">
+        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ ventas.length }} registros
+      </span>
+
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+        <button
+          type="button"
+          *ngFor="let pagina of paginas"
+          [class.active-page]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 

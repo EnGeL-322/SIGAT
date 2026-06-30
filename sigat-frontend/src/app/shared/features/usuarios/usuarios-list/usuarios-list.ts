@@ -23,6 +23,8 @@ export class UsuariosListComponent implements OnInit {
   showModal = false;
   editId: number | null = null;
   error = '';
+  itemsPorPagina = 10;
+  paginaActual = 1;
   form: FormGroup;
 
   constructor(private api: ApiService, private fb: FormBuilder, private cdr: ChangeDetectorRef) {
@@ -69,6 +71,34 @@ export class UsuariosListComponent implements OnInit {
     this.filtrados = this.usuarios.filter(u =>
       `${u.nombre} ${u.apellido} ${u.email} ${u.rolNombre}`.toLowerCase().includes(q)
     );
+    this.paginaActual = 1;
+  }
+
+  get filtradosPaginados(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filtrados.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.filtrados.length / this.itemsPorPagina));
+  }
+
+  get paginas(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, index) => index + 1);
+  }
+
+  get inicioPagina(): number {
+    if (!this.filtrados.length) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get finPagina(): number {
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.filtrados.length);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) return;
+    this.paginaActual = pagina;
   }
 
   openCreate(): void {

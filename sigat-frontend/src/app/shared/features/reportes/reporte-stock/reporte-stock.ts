@@ -18,6 +18,8 @@ export class ReporteStockComponent implements OnInit {
   marca = '';
   modelo = '';
   estado = 'TODOS';
+  itemsPorPagina = 10;
+  paginaActual = 1;
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -39,6 +41,34 @@ export class ReporteStockComponent implements OnInit {
       const coincideEstado = this.estado === 'TODOS' || this.estadoProducto(item.stockActual, item.stockMinimo) === this.estado;
       return coincideMarca && coincideModelo && coincideEstado;
     });
+    this.paginaActual = 1;
+  }
+
+  get filtradosPaginados(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filtrados.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.filtrados.length / this.itemsPorPagina));
+  }
+
+  get paginas(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, index) => index + 1);
+  }
+
+  get inicioPagina(): number {
+    if (!this.filtrados.length) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get finPagina(): number {
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.filtrados.length);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) return;
+    this.paginaActual = pagina;
   }
 
   estadoProducto(stock: number, minimo: number): string {

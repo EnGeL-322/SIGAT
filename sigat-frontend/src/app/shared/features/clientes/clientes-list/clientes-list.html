@@ -22,7 +22,7 @@
       <span>Acciones</span>
     </div>
 
-    <div class="table-row grid-clientes" *ngFor="let item of filtrados">
+    <div class="table-row grid-clientes" *ngFor="let item of filtradosPaginados">
       <span>{{ item.id }}</span>
       <span>DNI</span>
       <span>{{ item.cedula }}</span>
@@ -34,6 +34,33 @@
         <button class="icon yellow" (click)="openEdit(item)">&#9998;</button>
         <button class="icon green" (click)="openDetail(item)">&#128065;</button>
       </span>
+    </div>
+
+    <div class="empty-state" *ngIf="!filtrados.length">
+      No hay clientes para el criterio seleccionado.
+    </div>
+
+    <div class="report-pagination" *ngIf="filtrados.length">
+      <span class="pagination-info">
+        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ filtrados.length }} registros
+      </span>
+
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+        <button
+          type="button"
+          *ngFor="let pagina of paginas"
+          [class.active-page]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 

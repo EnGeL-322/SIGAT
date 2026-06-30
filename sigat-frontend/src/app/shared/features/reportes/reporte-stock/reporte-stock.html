@@ -39,8 +39,8 @@
       <span>Estado</span>
     </div>
 
-    <div class="table-row grid-reporte-stock" *ngFor="let item of filtrados; let i = index">
-      <span>{{ i + 1 }}</span>
+    <div class="table-row grid-reporte-stock" *ngFor="let item of filtradosPaginados; let i = index">
+      <span>{{ ((paginaActual - 1) * itemsPorPagina) + i + 1 }}</span>
       <span>{{ item.marca }}</span>
       <span>{{ item.modelo }}</span>
       <span>{{ item.codigo }}</span>
@@ -48,6 +48,33 @@
       <span>{{ item.stockActual }}</span>
       <span>{{ item.stockMinimo }}</span>
       <span><b class="badge" [ngClass]="estadoClass(item.stockActual, item.stockMinimo)">{{ estadoProducto(item.stockActual, item.stockMinimo) }}</b></span>
+    </div>
+
+    <div class="empty-state" *ngIf="!filtrados.length">
+      No hay productos para los filtros seleccionados.
+    </div>
+
+    <div class="report-pagination" *ngIf="filtrados.length">
+      <span class="pagination-info">
+        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ filtrados.length }} registros
+      </span>
+
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1">
+          Anterior
+        </button>
+        <button
+          type="button"
+          *ngFor="let pagina of paginas"
+          [class.active-page]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas">
+          Siguiente
+        </button>
+      </div>
     </div>
   </div>
 

@@ -22,6 +22,8 @@ export class ComprasListComponent implements OnInit {
   imeisDelDetalle: any[] = [];
   detalleSeleccionado: any = null;
   busquedaImei = '';
+  itemsPorPagina = 10;
+  paginaActual = 1;
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -33,6 +35,7 @@ export class ComprasListComponent implements OnInit {
     this.api.obtenerCompras().subscribe({
       next: (res: any) => {
         this.compras = res?.datos || [];
+        this.paginaActual = 1;
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -74,6 +77,33 @@ export class ComprasListComponent implements OnInit {
     return this.imeisDelDetalle.filter(imei =>
       (imei.numero || '').toLowerCase().includes(q)
     );
+  }
+
+  get comprasPaginadas(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.compras.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.compras.length / this.itemsPorPagina));
+  }
+
+  get paginas(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, index) => index + 1);
+  }
+
+  get inicioPagina(): number {
+    if (!this.compras.length) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get finPagina(): number {
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.compras.length);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) return;
+    this.paginaActual = pagina;
   }
 
   remove(id: number): void {

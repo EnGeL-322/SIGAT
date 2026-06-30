@@ -17,6 +17,10 @@ export class ComprasFormComponent implements OnInit {
   detalles: any[] = [];
   error = '';
 
+  busquedaProveedor = '';
+  mostrarDropdownProveedor = false;
+  proveedoresFiltrados: any[] = [];
+
   showProveedorModal = false;
   guardandoProveedor = false;
   proveedorError = '';
@@ -57,11 +61,50 @@ export class ComprasFormComponent implements OnInit {
         const match = this.proveedores.find(p =>
           (seleccionar.id != null && p.id === seleccionar.id) ||
           (seleccionar.ruc && p.ruc === seleccionar.ruc));
-        if (match) this.compra.proveedorId = match.id;
+        if (match) {
+          this.compra.proveedorId = match.id;
+          this.busquedaProveedor = match.nombre;
+        }
       }
       this.cdr.detectChanges();
     });
   }
+
+  // --- Proveedor dropdown ---
+
+  abrirDropdownProveedor(): void {
+    this.proveedoresFiltrados = [...this.proveedores];
+    this.mostrarDropdownProveedor = true;
+  }
+
+  filtrarProveedores(): void {
+    const q = this.busquedaProveedor.toLowerCase();
+    this.proveedoresFiltrados = this.proveedores.filter(p =>
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.ruc || '').toLowerCase().includes(q) ||
+      (p.contacto || '').toLowerCase().includes(q)
+    );
+    this.mostrarDropdownProveedor = true;
+    if (!this.busquedaProveedor) {
+      this.compra.proveedorId = null;
+    }
+  }
+
+  seleccionarProveedor(p: any): void {
+    this.compra.proveedorId = p.id;
+    this.busquedaProveedor = p.nombre;
+    this.mostrarDropdownProveedor = false;
+    this.cdr.detectChanges();
+  }
+
+  cerrarDropdownProveedor(): void {
+    setTimeout(() => {
+      this.mostrarDropdownProveedor = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  // --- Modal nuevo proveedor ---
 
   abrirNuevoProveedor(): void {
     this.proveedorError = '';
@@ -95,6 +138,8 @@ export class ComprasFormComponent implements OnInit {
       }
     });
   }
+
+  // --- Detalle compra ---
 
   productoCambiado(): void {
     const producto = this.productos.find(p => p.id == this.detalle.productoId);

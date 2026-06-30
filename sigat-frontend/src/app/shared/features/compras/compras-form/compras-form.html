@@ -19,10 +19,24 @@
           <span>Proveedor</span>
           <button type="button" class="inline-add-btn" (click)="abrirNuevoProveedor()">+ Nuevo</button>
         </div>
-        <select [(ngModel)]="compra.proveedorId">
-          <option [ngValue]="null">Proveedor</option>
-          <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
-        </select>
+        <div class="search-select">
+          <input type="text"
+                 [(ngModel)]="busquedaProveedor"
+                 (focus)="abrirDropdownProveedor()"
+                 (blur)="cerrarDropdownProveedor()"
+                 (input)="filtrarProveedores()"
+                 placeholder="Buscar proveedor..."
+                 autocomplete="off">
+          <div class="search-dropdown" *ngIf="mostrarDropdownProveedor">
+            <div *ngIf="!proveedoresFiltrados.length" class="search-option search-empty">Sin resultados</div>
+            <div class="search-option"
+                 *ngFor="let p of proveedoresFiltrados"
+                 (mousedown)="seleccionarProveedor(p)">
+              {{ p.nombre }}
+              <small *ngIf="p.ruc">RUC: {{ p.ruc }}</small>
+            </div>
+          </div>
+        </div>
       </label>
 
       <label>

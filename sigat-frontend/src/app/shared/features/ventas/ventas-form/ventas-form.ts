@@ -21,6 +21,15 @@ export class VentasFormComponent implements OnInit {
   vendedorNombre = '';
   vendedorId: number | null = null;
 
+  busquedaCliente = '';
+  mostrarDropdownCliente = false;
+  clientesFiltrados: any[] = [];
+
+  usuarios: any[] = [];
+  busquedaVendedor = '';
+  mostrarDropdownVendedor = false;
+  vendedoresFiltrados: any[] = [];
+
   showClienteModal = false;
   guardandoCliente = false;
   clienteError = '';
@@ -53,10 +62,15 @@ export class VentasFormComponent implements OnInit {
     this.vendedorId = user?.usuarioId ?? null;
     this.vendedorNombre = [user?.nombre, user?.apellido].filter(Boolean).join(' ') || user?.nombre || 'SIGAT';
     this.venta.vendedor = this.vendedorNombre;
+    this.busquedaVendedor = this.vendedorNombre;
 
     this.cargarClientes();
     this.api.obtenerProductos().subscribe((r: any) => {
       this.productos = r?.datos || [];
+      this.cdr.detectChanges();
+    });
+    this.api.obtenerUsuarios().subscribe((r: any) => {
+      this.usuarios = r?.datos || [];
       this.cdr.detectChanges();
     });
   }
@@ -74,6 +88,7 @@ export class VentasFormComponent implements OnInit {
           (seleccionar.cedula && c.cedula === seleccionar.cedula));
         if (match) {
           this.venta.clienteId = match.id;
+          this.busquedaCliente = `${match.nombre} ${match.apellido}`;
           this.clienteCambiado();
         }
       }
@@ -85,6 +100,75 @@ export class VentasFormComponent implements OnInit {
     const cliente = this.clientes.find(c => c.id == this.venta.clienteId);
     this.venta.dni = cliente?.cedula || '';
   }
+
+  // --- Cliente dropdown ---
+
+  abrirDropdownCliente(): void {
+    this.clientesFiltrados = [...this.clientes];
+    this.mostrarDropdownCliente = true;
+  }
+
+  filtrarClientes(): void {
+    const q = this.busquedaCliente.toLowerCase();
+    this.clientesFiltrados = this.clientes.filter(c =>
+      `${c.nombre} ${c.apellido}`.toLowerCase().includes(q) ||
+      (c.cedula || '').toLowerCase().includes(q)
+    );
+    this.mostrarDropdownCliente = true;
+    if (!this.busquedaCliente) {
+      this.venta.clienteId = null;
+      this.venta.dni = '';
+    }
+  }
+
+  seleccionarCliente(c: any): void {
+    this.venta.clienteId = c.id;
+    this.busquedaCliente = `${c.nombre} ${c.apellido}`;
+    this.mostrarDropdownCliente = false;
+    this.clienteCambiado();
+    this.cdr.detectChanges();
+  }
+
+  cerrarDropdownCliente(): void {
+    setTimeout(() => {
+      this.mostrarDropdownCliente = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  // --- Vendedor dropdown ---
+
+  abrirDropdownVendedor(): void {
+    this.vendedoresFiltrados = [...this.usuarios];
+    this.mostrarDropdownVendedor = true;
+  }
+
+  filtrarVendedores(): void {
+    const q = this.busquedaVendedor.toLowerCase();
+    this.vendedoresFiltrados = this.usuarios.filter(u =>
+      `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q)
+    );
+    this.mostrarDropdownVendedor = true;
+  }
+
+  seleccionarVendedor(u: any): void {
+    this.vendedorId = u.id ?? u.usuarioId ?? null;
+    this.vendedorNombre = [u.nombre, u.apellido].filter(Boolean).join(' ') || u.email || 'SIGAT';
+    this.busquedaVendedor = this.vendedorNombre;
+    this.venta.vendedor = this.vendedorNombre;
+    this.mostrarDropdownVendedor = false;
+    this.cdr.detectChanges();
+  }
+
+  cerrarDropdownVendedor(): void {
+    setTimeout(() => {
+      this.mostrarDropdownVendedor = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  // --- Modal nuevo cliente ---
 
   abrirNuevoCliente(): void {
     this.clienteError = '';
@@ -118,6 +202,8 @@ export class VentasFormComponent implements OnInit {
       }
     });
   }
+
+  // --- Detalle venta ---
 
   productoCambiado(): void {
     const producto = this.productos.find(p => p.id == this.detalle.productoId);

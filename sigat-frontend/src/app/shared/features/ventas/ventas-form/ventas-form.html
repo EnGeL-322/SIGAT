@@ -19,10 +19,24 @@
           <span>Cliente</span>
           <button type="button" class="inline-add-btn" (click)="abrirNuevoCliente()">+ Nuevo</button>
         </div>
-        <select [(ngModel)]="venta.clienteId" (ngModelChange)="clienteCambiado()">
-          <option [ngValue]="null">Cliente</option>
-          <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option>
-        </select>
+        <div class="search-select">
+          <input type="text"
+                 [(ngModel)]="busquedaCliente"
+                 (focus)="abrirDropdownCliente()"
+                 (blur)="cerrarDropdownCliente()"
+                 (input)="filtrarClientes()"
+                 placeholder="Buscar cliente..."
+                 autocomplete="off">
+          <div class="search-dropdown" *ngIf="mostrarDropdownCliente">
+            <div *ngIf="!clientesFiltrados.length" class="search-option search-empty">Sin resultados</div>
+            <div class="search-option"
+                 *ngFor="let c of clientesFiltrados"
+                 (mousedown)="seleccionarCliente(c)">
+              {{ c.nombre }} {{ c.apellido }}
+              <small *ngIf="c.cedula">DNI: {{ c.cedula }}</small>
+            </div>
+          </div>
+        </div>
       </label>
 
       <label>
@@ -46,7 +60,24 @@
 
       <label>
         <span>Vendedor</span>
-        <input [(ngModel)]="venta.vendedor" placeholder="Vendedor" readonly>
+        <div class="search-select">
+          <input type="text"
+                 [(ngModel)]="busquedaVendedor"
+                 (focus)="abrirDropdownVendedor()"
+                 (blur)="cerrarDropdownVendedor()"
+                 (input)="filtrarVendedores()"
+                 placeholder="Buscar vendedor..."
+                 autocomplete="off">
+          <div class="search-dropdown" *ngIf="mostrarDropdownVendedor">
+            <div *ngIf="!vendedoresFiltrados.length" class="search-option search-empty">Sin resultados</div>
+            <div class="search-option"
+                 *ngFor="let u of vendedoresFiltrados"
+                 (mousedown)="seleccionarVendedor(u)">
+              {{ u.nombre }} {{ u.apellido }}
+              <small>{{ u.email }}</small>
+            </div>
+          </div>
+        </div>
       </label>
     </div>
 

@@ -6,6 +6,8 @@
     </div>
 
     <div class="actions">
+      <input class="list-search" type="text" [(ngModel)]="busqueda" (input)="filtrar()"
+             placeholder="Buscar por comprobante, proveedor...">
       <a class="primary-btn" routerLink="/compras/nueva">Nueva compra <span class="plus-chip">+</span></a>
     </div>
   </div>
@@ -37,10 +39,13 @@
     <div class="empty-state" *ngIf="!compras.length">
       No hay compras registradas.
     </div>
+    <div class="empty-state" *ngIf="compras.length && !comprasFiltradas.length">
+      No se encontraron compras con ese criterio.
+    </div>
 
-    <div class="report-pagination" *ngIf="compras.length">
+    <div class="report-pagination" *ngIf="comprasFiltradas.length">
       <span class="pagination-info">
-        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ compras.length }} registros
+        Mostrando {{ inicioPagina }}-{{ finPagina }} de {{ comprasFiltradas.length }} registros
       </span>
 
       <div class="pagination-controls" *ngIf="totalPaginas > 1">

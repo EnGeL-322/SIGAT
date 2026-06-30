@@ -56,7 +56,9 @@
 
       <label>
         <span>Numero comprobante</span>
-        <input [(ngModel)]="compra.numeroComprobante" placeholder="Numero comprobante">
+        <input [value]="previewNumeroCompra || '—'" readonly
+               class="comprobante-preview"
+               [class.comprobante-ready]="!!compra.tipoComprobante">
       </label>
 
       <label class="observation-field">

@@ -54,6 +54,13 @@
       </label>
 
       <label>
+        <span>Numero de comprobante</span>
+        <input [value]="previewNumeroVenta || '—'" readonly
+               class="comprobante-preview"
+               [class.comprobante-ready]="!!venta.tipoComprobante">
+      </label>
+
+      <label>
         <span>DNI</span>
         <input [(ngModel)]="venta.dni" placeholder="DNI">
       </label>

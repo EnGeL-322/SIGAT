@@ -23,6 +23,9 @@ public class Venta {
     @Column(nullable = false, unique = true)
     private String numeroVenta;
 
+    @Column(name = "tipo_comprobante")
+    private String tipoComprobante;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;

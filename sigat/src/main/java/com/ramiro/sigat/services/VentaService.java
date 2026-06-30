@@ -56,7 +56,8 @@ public class VentaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
 
         Venta venta = new Venta();
-        venta.setNumeroVenta(generarNumeroVenta());
+        venta.setTipoComprobante(dto.getTipoComprobante());
+        venta.setNumeroVenta(generarNumeroVenta(dto.getTipoComprobante()));
         venta.setCliente(cliente);
         venta.setVendedorId(dto.getVendedorId());
         venta.setVendedorNombre(dto.getVendedorNombre());
@@ -173,8 +174,14 @@ public class VentaService {
      * mismo valor (a diferencia de leer count()+1, que es una condicion de
      * carrera entre el SELECT y el INSERT de cada transaccion).
      */
-    private String generarNumeroVenta() {
-        return "VTA-" + contadorVenta.incrementAndGet();
+    private String generarNumeroVenta(String tipo) {
+        long n = contadorVenta.incrementAndGet();
+        if (tipo == null || tipo.isBlank()) return "VTA-" + n;
+        return switch (tipo.toUpperCase()) {
+            case "BOLETA"  -> String.format("B001-%06d", n);
+            case "FACTURA" -> String.format("F001-%06d", n);
+            default        -> "VTA-" + n;
+        };
     }
 
     private void validarDetalle(DetalleVentaDTO detalleDto) {
@@ -218,6 +225,7 @@ public class VentaService {
         return VentaDTO.builder()
                 .id(venta.getId())
                 .numeroVenta(venta.getNumeroVenta())
+                .tipoComprobante(venta.getTipoComprobante())
                 .clienteId(venta.getCliente().getId())
                 .clienteNombre(venta.getCliente().getNombre() + " " + venta.getCliente().getApellido())
                 .vendedorId(venta.getVendedorId())

@@ -62,7 +62,8 @@ public class CompraService {
                 .orElseThrow(() -> new ResourceNotFoundException("Proveedor no encontrado"));
 
         Compra compra = new Compra();
-        compra.setNumeroCompra(generarNumeroCompra());
+        compra.setTipoComprobante(dto.getTipoComprobante());
+        compra.setNumeroCompra(generarNumeroCompra(dto.getTipoComprobante()));
         compra.setProveedor(proveedor);
         compra.setEstado(Compra.EstadoCompra.PENDIENTE);
         compra.setTotal(0.0);
@@ -179,8 +180,15 @@ public class CompraService {
      * mismo valor (a diferencia de leer count()+1, que es una condicion de
      * carrera entre el SELECT y el INSERT de cada transaccion).
      */
-    private String generarNumeroCompra() {
-        return "CMP-" + contadorCompra.incrementAndGet();
+    private String generarNumeroCompra(String tipo) {
+        long n = contadorCompra.incrementAndGet();
+        if (tipo == null || tipo.isBlank()) return "CMP-" + n;
+        return switch (tipo.toUpperCase()) {
+            case "BOLETA"  -> String.format("B001-%06d", n);
+            case "FACTURA" -> String.format("F001-%06d", n);
+            case "GUIA"    -> String.format("G001-%06d", n);
+            default        -> "CMP-" + n;
+        };
     }
 
     private void validarDetalle(DetalleCompraDTO detalleDto) {
@@ -260,6 +268,7 @@ public class CompraService {
         return CompraDTO.builder()
                 .id(compra.getId())
                 .numeroCompra(compra.getNumeroCompra())
+                .tipoComprobante(compra.getTipoComprobante())
                 .proveedorId(compra.getProveedor().getId())
                 .proveedorNombre(compra.getProveedor().getNombre())
                 .total(compra.getTotal())

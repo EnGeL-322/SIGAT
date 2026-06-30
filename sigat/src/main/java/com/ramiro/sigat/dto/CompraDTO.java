@@ -9,6 +9,7 @@ import lombok.*;
 public class CompraDTO {
     private Long id;
     private String numeroCompra;
+    private String tipoComprobante;
     @NotNull(message = "Debe seleccionar un proveedor")
     private Long proveedorId;
     private String proveedorNombre;

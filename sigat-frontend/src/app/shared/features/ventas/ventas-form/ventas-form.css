@@ -129,3 +129,17 @@
   cursor: default;
   font-style: italic;
 }
+
+.comprobante-preview {
+  background: #f8f9fc;
+  color: #8898aa;
+  cursor: default;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+}
+
+.comprobante-ready {
+  background: #eef6ff;
+  color: #2563eb;
+  font-weight: 600;
+}

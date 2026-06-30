@@ -1,1 +1,17 @@
+.list-search {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  min-width: 260px;
+  background: #f8f9fc;
+  color: #1f2a44;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
 
+.list-search:focus {
+  border-color: #5b6cf0;
+  box-shadow: 0 0 0 3px rgba(91, 108, 240, 0.15);
+  background: #fff;
+}

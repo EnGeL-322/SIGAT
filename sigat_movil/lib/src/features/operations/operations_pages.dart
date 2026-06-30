@@ -53,14 +53,16 @@ extension MovementLabels on MovementType {
   String get partyIdKey => isPurchase ? 'proveedorId' : 'clienteId';
   String get partyLabel => isPurchase ? 'Proveedor' : 'Cliente';
   String get detailPath => isPurchase ? '/compras' : '/ventas';
-  String get createPartyLabel => isPurchase ? 'Nuevo proveedor' : 'Nuevo cliente';
+  String get createPartyLabel =>
+      isPurchase ? 'Nuevo proveedor' : 'Nuevo cliente';
   String get addPartyLabel =>
       isPurchase ? 'Agregar datos del proveedor' : 'Agregar datos del cliente';
-
-  /// Clave unica para localizar el registro recien creado tras recargar.
   String get partyMatchKey => isPurchase ? 'ruc' : 'cedula';
 
-  /// Campos completos del proveedor/cliente para el alta rapida.
+  List<String> get tiposComprobante => isPurchase
+      ? const ['BOLETA', 'FACTURA', 'GUIA']
+      : const ['BOLETA', 'FACTURA'];
+
   List<EntityField> get partyFields => isPurchase
       ? const [
           EntityField(key: 'nombre', label: 'Nombre / Razon social'),
@@ -90,6 +92,104 @@ extension MovementLabels on MovementType {
         ];
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+String _comprobantePreview(String tipo) => switch (tipo) {
+      'BOLETA' => 'B001-XXXXXX',
+      'FACTURA' => 'F001-XXXXXX',
+      'GUIA' => 'G001-XXXXXX',
+      _ => '—',
+    };
+
+String _capitalize(String s) =>
+    s.isEmpty ? s : s[0] + s.substring(1).toLowerCase();
+
+/// Bottom-sheet buscador generico. Devuelve el item seleccionado o null.
+Future<Map<String, dynamic>?> _showSearchPicker({
+  required BuildContext context,
+  required String title,
+  required List<Map<String, dynamic>> items,
+  required String Function(Map<String, dynamic>) display,
+  required String Function(Map<String, dynamic>) searchIn,
+}) {
+  final controller = TextEditingController();
+
+  return showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setSheet) {
+          final q = controller.text.trim().toLowerCase();
+          final filtered = q.isEmpty
+              ? items
+              : items
+                    .where((item) => searchIn(item).toLowerCase().contains(q))
+                    .toList();
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 18,
+              right: 18,
+              top: 18,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar...',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (_) => setSheet(() {}),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(child: Text('Sin resultados'))
+                        : ListView.separated(
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, i) {
+                              final item = filtered[i];
+                              return ListTile(
+                                title: Text(display(item)),
+                                onTap: () => Navigator.pop(ctx, item),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// List page
+// ---------------------------------------------------------------------------
+
 class MovementListPage extends StatefulWidget {
   const MovementListPage({super.key, required this.type});
 
@@ -103,16 +203,37 @@ class _MovementListPageState extends State<MovementListPage> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   String _error = '';
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _items;
+    return _items.where((item) {
+      final numero =
+          (item[widget.type.numberKey]?.toString() ?? '').toLowerCase();
+      final party =
+          (item[widget.type.partyKey]?.toString() ?? '').toLowerCase();
+      return numero.contains(q) || party.contains(q);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final type = widget.type;
+    final filtered = _filtered;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -123,6 +244,21 @@ class _MovementListPageState extends State<MovementListPage> {
             onPressed: () => Navigator.pushNamed(context, type.formRoute),
             icon: const Icon(Icons.add),
             tooltip: 'Nueva ${type.singular}',
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText:
+                'Buscar por comprobante o ${type.partyLabel.toLowerCase()}...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => _searchController.clear(),
+                  )
+                : null,
           ),
         ),
         const SizedBox(height: 10),
@@ -143,11 +279,22 @@ class _MovementListPageState extends State<MovementListPage> {
                       ),
                     ],
                   )
+                : filtered.isEmpty
+                ? ListView(
+                    children: [
+                      const SizedBox(
+                        height: 220,
+                        child: EmptyState(
+                          message: 'Sin resultados para esa busqueda',
+                        ),
+                      ),
+                    ],
+                  )
                 : ListView.separated(
-                    itemCount: _items.length,
+                    itemCount: filtered.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final item = _items[index];
+                      final item = filtered[index];
                       return SigatCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,9 +356,8 @@ class _MovementListPageState extends State<MovementListPage> {
       _error = '';
     });
     try {
-      final items = await SessionScope.read(
-        context,
-      ).api.list(widget.type.listPath);
+      final items =
+          await SessionScope.read(context).api.list(widget.type.listPath);
       if (mounted) setState(() => _items = items.reversed.toList());
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
@@ -263,6 +409,10 @@ class _MovementListPageState extends State<MovementListPage> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Form page
+// ---------------------------------------------------------------------------
+
 class MovementFormPage extends StatefulWidget {
   const MovementFormPage({super.key, required this.type});
 
@@ -275,11 +425,17 @@ class MovementFormPage extends StatefulWidget {
 class _MovementFormPageState extends State<MovementFormPage> {
   final _qtyController = TextEditingController(text: '1');
   final _priceController = TextEditingController();
+
   List<Map<String, dynamic>> _parties = [];
   List<Map<String, dynamic>> _products = [];
   final List<Map<String, dynamic>> _details = [];
+
   int? _partyId;
+  String _partyDisplayName = '';
   int? _productId;
+  String _productDisplayName = '';
+  String? _tipoComprobante;
+
   bool _loading = true;
   bool _saving = false;
   String _error = '';
@@ -320,22 +476,29 @@ class _MovementFormPageState extends State<MovementFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // --- Party picker ---
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: _partyId,
-                            decoration: InputDecoration(
-                              labelText: type.partyLabel,
+                          child: InkWell(
+                            onTap: () => _pickParty(type),
+                            borderRadius: BorderRadius.circular(12),
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: type.partyLabel,
+                                suffixIcon: const Icon(Icons.search),
+                              ),
+                              child: Text(
+                                _partyDisplayName.isEmpty
+                                    ? 'Buscar ${type.partyLabel.toLowerCase()}...'
+                                    : _partyDisplayName,
+                                style: TextStyle(
+                                  color: _partyDisplayName.isEmpty
+                                      ? Theme.of(context).hintColor
+                                      : null,
+                                ),
+                              ),
                             ),
-                            items: _parties.map((party) {
-                              return DropdownMenuItem<int>(
-                                value: _asInt(party['id']),
-                                child: Text(_partyName(party)),
-                              );
-                            }).toList(),
-                            onChanged: (value) =>
-                                setState(() => _partyId = value),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -348,31 +511,58 @@ class _MovementFormPageState extends State<MovementFormPage> {
                     ),
                     if (_parties.isEmpty) _partyEmptyHint(),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<int>(
-                      initialValue: _productId,
-                      decoration: const InputDecoration(labelText: 'Producto'),
-                      items: _products.map((product) {
-                        return DropdownMenuItem<int>(
-                          value: _asInt(product['id']),
-                          child: Text(
-                            '${product['marca'] ?? ''} ${product['modelo'] ?? product['nombre'] ?? ''}'
-                                .trim(),
+
+                    // --- Tipo de comprobante ---
+                    DropdownButtonFormField<String>(
+                      value: _tipoComprobante,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de comprobante',
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sin comprobante'),
+                        ),
+                        for (final tipo in type.tiposComprobante)
+                          DropdownMenuItem(
+                            value: tipo,
+                            child: Text(_capitalize(tipo)),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) => setState(() {
-                        _productId = value;
-                        final product = _selectedProduct;
-                        if (product != null) {
-                          _priceController.text = _asNum(
-                            product['precio'],
-                          ).toStringAsFixed(2);
-                        }
-                      }),
+                      ],
+                      onChanged: (v) => setState(() => _tipoComprobante = v),
+                    ),
+                    if (_tipoComprobante != null) ...[
+                      const SizedBox(height: 8),
+                      _comprobanteBadge(_tipoComprobante!),
+                    ],
+                    const SizedBox(height: 12),
+
+                    // --- Product picker ---
+                    InkWell(
+                      onTap: _pickProduct,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Producto',
+                          suffixIcon: Icon(Icons.search),
+                        ),
+                        child: Text(
+                          _productDisplayName.isEmpty
+                              ? 'Buscar producto...'
+                              : _productDisplayName,
+                          style: TextStyle(
+                            color: _productDisplayName.isEmpty
+                                ? Theme.of(context).hintColor
+                                : null,
+                          ),
+                        ),
+                      ),
                     ),
                     if (_productId != null && _selectedProduct != null)
                       _stockBadge(),
                     const SizedBox(height: 12),
+
+                    // --- Qty / Price ---
                     Row(
                       children: [
                         Expanded(
@@ -408,6 +598,8 @@ class _MovementFormPageState extends State<MovementFormPage> {
                 ),
               ),
               const SizedBox(height: 12),
+
+              // --- Detail list ---
               SigatCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -460,218 +652,78 @@ class _MovementFormPageState extends State<MovementFormPage> {
           );
   }
 
-  Map<String, dynamic>? get _selectedProduct {
-    return _products.cast<Map<String, dynamic>?>().firstWhere(
-      (product) => _asInt(product?['id']) == _productId,
-      orElse: () => null,
+  // --- Helpers de UI ---
+
+  Widget _comprobanteBadge(String tipo) {
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF6FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.receipt_long_outlined,
+            size: 16,
+            color: Color(0xFF2563EB),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _comprobantePreview(tipo),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              color: Color(0xFF2563EB),
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Future<void> _loadOptions() async {
-    setState(() {
-      _loading = true;
-      _error = '';
-    });
-    try {
-      final api = SessionScope.read(context).api;
-      final result = await Future.wait([
-        api.list(widget.type.partyEndpoint),
-        api.list('/productos'),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _parties = result[0];
-        _products = result[1];
-      });
-    } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  /// Abre el formulario para registrar un proveedor/cliente con todos sus
-  /// datos sin salir de la operacion. Al guardar, recarga la lista y deja
-  /// seleccionado el registro recien creado.
-  Future<void> _openNewParty() async {
-    final type = widget.type;
-    final fields = type.partyFields;
-    final api = SessionScope.read(context).api;
-    final controllers = <String, TextEditingController>{
-      for (final field in fields)
-        field.key: TextEditingController(text: field.defaultValue.toString()),
-    };
-    final formKey = GlobalKey<FormState>();
-    var saving = false;
-    var formError = '';
-
-    final created = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 18,
-                right: 18,
-                top: 18,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 18,
-              ),
-              child: Form(
-                key: formKey,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    Text(
-                      type.createPartyLabel,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    for (final field in fields) ...[
-                      TextFormField(
-                        controller: controllers[field.key],
-                        keyboardType: _partyKeyboardType(field.type),
-                        minLines: field.type == EntityFieldType.multiline
-                            ? 3
-                            : 1,
-                        maxLines: field.type == EntityFieldType.multiline
-                            ? 5
-                            : 1,
-                        decoration: InputDecoration(labelText: field.label),
-                        validator: (value) => _validatePartyField(field, value),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    ErrorBanner(message: formError),
-                    FilledButton(
-                      onPressed: saving
-                          ? null
-                          : () async {
-                              if (!(formKey.currentState?.validate() ??
-                                  false)) {
-                                return;
-                              }
-                              setSheetState(() {
-                                saving = true;
-                                formError = '';
-                              });
-                              try {
-                                final payload = <String, dynamic>{
-                                  for (final field in fields)
-                                    field.key: controllers[field.key]!.text
-                                        .trim(),
-                                };
-                                final response = await api.post(
-                                  type.partyEndpoint,
-                                  payload,
-                                );
-                                final createdParty = ApiClient.mapFromResponse(
-                                  response,
-                                );
-                                if (!sheetContext.mounted) return;
-                                Navigator.pop(
-                                  sheetContext,
-                                  createdParty.isEmpty ? payload : createdParty,
-                                );
-                              } on ApiException catch (error) {
-                                // No se rearma el sheet tras cerrarlo: evitaria
-                                // reconstruir TextField con controladores ya
-                                // liberados.
-                                if (sheetContext.mounted) {
-                                  setSheetState(() {
-                                    formError = error.message;
-                                    saving = false;
-                                  });
-                                }
-                              }
-                            },
-                      child: Text(saving ? 'Guardando...' : 'Agregar'),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed: saving
-                          ? null
-                          : () => Navigator.pop(sheetContext),
-                      child: const Text('Cancelar'),
-                    ),
-                  ],
+  Widget _stockBadge() {
+    final stock = _asNum(_selectedProduct?['stockActual']).toInt();
+    final color = stock <= 0
+        ? AppTheme.rose
+        : (stock <= 5 ? const Color(0xFFB7791F) : const Color(0xFF14804A));
+    final text = stock <= 0
+        ? 'Sin stock disponible'
+        : 'Quedan $stock dispositivo(s)';
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                text,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-
-    // Se liberan los controladores tras la animacion de cierre de la hoja
-    // modal para no reconstruir un TextField con un controlador ya liberado.
-    final pendientes = controllers.values.toList();
-    Future.delayed(const Duration(milliseconds: 350), () {
-      for (final controller in pendientes) {
-        controller.dispose();
-      }
-    });
-
-    if (created != null && mounted) {
-      await _reloadPartiesSelecting(created);
-    }
-  }
-
-  /// Recarga proveedores/clientes y selecciona el creado por id o clave unica.
-  Future<void> _reloadPartiesSelecting(Map<String, dynamic> created) async {
-    final type = widget.type;
-    final api = SessionScope.read(context).api;
-    try {
-      final parties = await api.list(type.partyEndpoint);
-      if (!mounted) return;
-      final createdId = _asInt(created['id']);
-      final createdMatch = created[type.partyMatchKey]?.toString();
-      Map<String, dynamic>? found;
-      for (final party in parties) {
-        if (createdId != null && _asInt(party['id']) == createdId) {
-          found = party;
-          break;
-        }
-        if (createdMatch != null &&
-            createdMatch.isNotEmpty &&
-            party[type.partyMatchKey]?.toString() == createdMatch) {
-          found = party;
-          break;
-        }
-      }
-      setState(() {
-        _parties = parties;
-        if (found != null) _partyId = _asInt(found['id']);
-      });
-    } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    }
-  }
-
-  TextInputType _partyKeyboardType(EntityFieldType type) {
-    return switch (type) {
-      EntityFieldType.email => TextInputType.emailAddress,
-      EntityFieldType.integer => TextInputType.number,
-      EntityFieldType.decimal => const TextInputType.numberWithOptions(
-        decimal: true,
+            ],
+          ),
+        ),
       ),
-      EntityFieldType.multiline => TextInputType.multiline,
-      EntityFieldType.password || EntityFieldType.text => TextInputType.text,
-    };
-  }
-
-  String? _validatePartyField(EntityField field, String? value) {
-    final text = value?.trim() ?? '';
-    if (field.required && text.isEmpty) return 'Campo requerido';
-    if (text.isEmpty) return null;
-    if (field.type == EntityFieldType.email && !text.contains('@')) {
-      return 'Correo no valido';
-    }
-    return null;
+    );
   }
 
   Widget _partyEmptyHint() {
@@ -727,13 +779,252 @@ class _MovementFormPageState extends State<MovementFormPage> {
     );
   }
 
+  // --- Pickers ---
+
+  Future<void> _pickParty(MovementType type) async {
+    final selected = await _showSearchPicker(
+      context: context,
+      title: type.partyLabel,
+      items: _parties,
+      display: _partyName,
+      searchIn: (p) =>
+          '${_partyName(p)} ${p['ruc'] ?? ''} ${p['cedula'] ?? ''}',
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _partyId = _asInt(selected['id']);
+        _partyDisplayName = _partyName(selected);
+      });
+    }
+  }
+
+  Future<void> _pickProduct() async {
+    final selected = await _showSearchPicker(
+      context: context,
+      title: 'Producto',
+      items: _products,
+      display: _productLabel,
+      searchIn: _productLabel,
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _productId = _asInt(selected['id']);
+        _productDisplayName = _productLabel(selected);
+        _priceController.text =
+            _asNum(selected['precio']).toStringAsFixed(2);
+      });
+    }
+  }
+
+  String _partyName(Map<String, dynamic> party) {
+    if (widget.type.isPurchase) return party['nombre']?.toString() ?? '';
+    return '${party['nombre'] ?? ''} ${party['apellido'] ?? ''}'.trim();
+  }
+
+  String _productLabel(Map<String, dynamic> p) =>
+      '${p['nombre'] ?? ''} ${p['marca'] ?? ''} ${p['modelo'] ?? ''}'
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+  // --- Nueva contraparte (proveedor/cliente) ---
+
+  Future<void> _openNewParty() async {
+    final type = widget.type;
+    final fields = type.partyFields;
+    final api = SessionScope.read(context).api;
+    final controllers = <String, TextEditingController>{
+      for (final field in fields)
+        field.key: TextEditingController(text: field.defaultValue.toString()),
+    };
+    final formKey = GlobalKey<FormState>();
+    var saving = false;
+    var formError = '';
+
+    final created = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 18,
+                right: 18,
+                top: 18,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+              ),
+              child: Form(
+                key: formKey,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Text(
+                      type.createPartyLabel,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final field in fields) ...[
+                      TextFormField(
+                        controller: controllers[field.key],
+                        keyboardType: _partyKeyboardType(field.type),
+                        minLines:
+                            field.type == EntityFieldType.multiline ? 3 : 1,
+                        maxLines:
+                            field.type == EntityFieldType.multiline ? 5 : 1,
+                        decoration: InputDecoration(labelText: field.label),
+                        validator: (value) =>
+                            _validatePartyField(field, value),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ErrorBanner(message: formError),
+                    FilledButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!(formKey.currentState?.validate() ??
+                                  false)) {
+                                return;
+                              }
+                              setSheetState(() {
+                                saving = true;
+                                formError = '';
+                              });
+                              try {
+                                final payload = <String, dynamic>{
+                                  for (final field in fields)
+                                    field.key: controllers[field.key]!
+                                        .text
+                                        .trim(),
+                                };
+                                final response = await api.post(
+                                  type.partyEndpoint,
+                                  payload,
+                                );
+                                final createdParty =
+                                    ApiClient.mapFromResponse(response);
+                                if (!sheetContext.mounted) return;
+                                Navigator.pop(
+                                  sheetContext,
+                                  createdParty.isEmpty
+                                      ? payload
+                                      : createdParty,
+                                );
+                              } on ApiException catch (error) {
+                                if (sheetContext.mounted) {
+                                  setSheetState(() {
+                                    formError = error.message;
+                                    saving = false;
+                                  });
+                                }
+                              }
+                            },
+                      child: Text(saving ? 'Guardando...' : 'Agregar'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: saving
+                          ? null
+                          : () => Navigator.pop(sheetContext),
+                      child: const Text('Cancelar'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    final pendientes = controllers.values.toList();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      for (final controller in pendientes) {
+        controller.dispose();
+      }
+    });
+
+    if (created != null && mounted) {
+      await _reloadPartiesSelecting(created);
+    }
+  }
+
+  Future<void> _reloadPartiesSelecting(
+      Map<String, dynamic> created) async {
+    final type = widget.type;
+    final api = SessionScope.read(context).api;
+    try {
+      final parties = await api.list(type.partyEndpoint);
+      if (!mounted) return;
+      final createdId = _asInt(created['id']);
+      final createdMatch = created[type.partyMatchKey]?.toString();
+      Map<String, dynamic>? found;
+      for (final party in parties) {
+        if (createdId != null && _asInt(party['id']) == createdId) {
+          found = party;
+          break;
+        }
+        if (createdMatch != null &&
+            createdMatch.isNotEmpty &&
+            party[type.partyMatchKey]?.toString() == createdMatch) {
+          found = party;
+          break;
+        }
+      }
+      setState(() {
+        _parties = parties;
+        if (found != null) {
+          _partyId = _asInt(found['id']);
+          _partyDisplayName = _partyName(found);
+        }
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    }
+  }
+
+  TextInputType _partyKeyboardType(EntityFieldType type) {
+    return switch (type) {
+      EntityFieldType.email => TextInputType.emailAddress,
+      EntityFieldType.integer => TextInputType.number,
+      EntityFieldType.decimal =>
+        const TextInputType.numberWithOptions(decimal: true),
+      EntityFieldType.multiline => TextInputType.multiline,
+      EntityFieldType.password || EntityFieldType.text => TextInputType.text,
+    };
+  }
+
+  String? _validatePartyField(EntityField field, String? value) {
+    final text = value?.trim() ?? '';
+    if (field.required && text.isEmpty) return 'Campo requerido';
+    if (text.isEmpty) return null;
+    if (field.type == EntityFieldType.email && !text.contains('@')) {
+      return 'Correo no valido';
+    }
+    return null;
+  }
+
+  // --- Detalle ---
+
+  Map<String, dynamic>? get _selectedProduct {
+    return _products.cast<Map<String, dynamic>?>().firstWhere(
+          (product) => _asInt(product?['id']) == _productId,
+          orElse: () => null,
+        );
+  }
+
   void _addDetail() {
     final product = _selectedProduct;
     final quantity = int.tryParse(_qtyController.text.trim()) ?? 0;
     final price = double.tryParse(_priceController.text.trim()) ?? 0;
 
     if (product == null || quantity <= 0 || price <= 0) {
-      setState(() => _error = 'Selecciona producto, cantidad y precio validos');
+      setState(
+          () => _error = 'Selecciona producto, cantidad y precio validos');
       return;
     }
 
@@ -749,16 +1040,40 @@ class _MovementFormPageState extends State<MovementFormPage> {
       _error = '';
       _details.add({
         'productoId': _asInt(product['id']),
-        'productoNombre':
-            product['nombre'] ??
-            '${product['marca'] ?? ''} ${product['modelo'] ?? ''}'.trim(),
+        'productoNombre': _productLabel(product),
         'cantidad': quantity,
         'precioUnitario': price,
       });
       _productId = null;
+      _productDisplayName = '';
       _qtyController.text = '1';
       _priceController.clear();
     });
+  }
+
+  // --- Carga y guardado ---
+
+  Future<void> _loadOptions() async {
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      final api = SessionScope.read(context).api;
+      final result = await Future.wait([
+        api.list(widget.type.partyEndpoint),
+        api.list('/productos'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _parties = result[0];
+        _products = result[1];
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _save() async {
@@ -778,6 +1093,7 @@ class _MovementFormPageState extends State<MovementFormPage> {
     final payload = {
       widget.type.isPurchase ? 'compra' : 'venta': {
         widget.type.partyIdKey: _partyId,
+        'tipoComprobante': _tipoComprobante,
       },
       'detalles': _details
           .map(
@@ -807,52 +1123,12 @@ class _MovementFormPageState extends State<MovementFormPage> {
           (_asNum(detail['cantidad']) * _asNum(detail['precioUnitario']));
     });
   }
-
-  String _partyName(Map<String, dynamic> party) {
-    if (widget.type.isPurchase) return party['nombre']?.toString() ?? '';
-    return '${party['nombre'] ?? ''} ${party['apellido'] ?? ''}'.trim();
-  }
-
-  Widget _stockBadge() {
-    final stock = _asNum(_selectedProduct?['stockActual']).toInt();
-    final color = stock <= 0
-        ? AppTheme.rose
-        : (stock <= 5 ? const Color(0xFFB7791F) : const Color(0xFF14804A));
-    final text = stock <= 0
-        ? 'Sin stock disponible'
-        : 'Quedan $stock dispositivo(s)';
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.inventory_2_outlined, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                text,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-/// Hoja de detalle de una compra/venta con buscador por IMEI o producto.
+// ---------------------------------------------------------------------------
+// Detail sheet (sin cambios funcionales, preservada integramente)
+// ---------------------------------------------------------------------------
+
 class _MovementDetailSheet extends StatefulWidget {
   const _MovementDetailSheet({
     required this.type,
@@ -913,11 +1189,12 @@ class _MovementDetailSheetState extends State<_MovementDetailSheet> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _details;
     return _details.where((detail) {
-      final producto = (detail['productoNombre']?.toString() ?? '')
-          .toLowerCase();
+      final producto =
+          (detail['productoNombre']?.toString() ?? '').toLowerCase();
       if (producto.contains(query)) return true;
 
-      final imeiVenta = (detail['imeiNumero']?.toString() ?? '').toLowerCase();
+      final imeiVenta =
+          (detail['imeiNumero']?.toString() ?? '').toLowerCase();
       if (imeiVenta.contains(query)) return true;
 
       final imeis = detail['imeis'];
@@ -925,7 +1202,9 @@ class _MovementDetailSheetState extends State<_MovementDetailSheet> {
         return imeis.any(
           (imei) =>
               imei is Map &&
-              (imei['numero']?.toString() ?? '').toLowerCase().contains(query),
+              (imei['numero']?.toString() ?? '')
+                  .toLowerCase()
+                  .contains(query),
         );
       }
       return false;
@@ -999,7 +1278,6 @@ class _MovementDetailSheetState extends State<_MovementDetailSheet> {
   }
 }
 
-/// Item de compra: muestra el producto y la lista de IMEIs generados.
 class _PurchaseDetailTile extends StatelessWidget {
   const _PurchaseDetailTile({required this.detail, required this.search});
 
@@ -1018,9 +1296,9 @@ class _PurchaseDetailTile extends StatelessWidget {
               .where(
                 (imei) =>
                     imei is Map &&
-                    (imei['numero']?.toString() ?? '').toLowerCase().contains(
-                      query,
-                    ),
+                    (imei['numero']?.toString() ?? '')
+                        .toLowerCase()
+                        .contains(query),
               )
               .toList();
 
@@ -1043,12 +1321,14 @@ class _PurchaseDetailTile extends StatelessWidget {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.smartphone_outlined, size: 18),
-                title: Text(imei is Map ? (imei['numero']?.toString() ?? '') : ''),
+                title: Text(
+                    imei is Map ? (imei['numero']?.toString() ?? '') : ''),
                 trailing: StatusChip(
                   label: imei is Map
                       ? (imei['estado']?.toString() ?? 'EN_STOCK')
                       : 'EN_STOCK',
-                  color: _imeiColor(imei is Map ? imei['estado']?.toString() : null),
+                  color: _imeiColor(
+                      imei is Map ? imei['estado']?.toString() : null),
                 ),
               ),
             if (visibles.isEmpty)
@@ -1063,7 +1343,6 @@ class _PurchaseDetailTile extends StatelessWidget {
   }
 }
 
-/// Item de venta: muestra el producto y el IMEI vendido.
 class _SaleDetailTile extends StatelessWidget {
   const _SaleDetailTile({required this.detail});
 

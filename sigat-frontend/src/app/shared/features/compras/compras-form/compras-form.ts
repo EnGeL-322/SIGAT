@@ -212,12 +212,24 @@ export class ComprasFormComponent implements OnInit {
     this.detalles.splice(index, 1);
   }
 
+  get previewNumeroCompra(): string {
+    switch (this.compra.tipoComprobante) {
+      case 'BOLETA':  return 'B001-XXXXXX';
+      case 'FACTURA': return 'F001-XXXXXX';
+      case 'GUIA':    return 'G001-XXXXXX';
+      default: return '';
+    }
+  }
+
   guardar(): void {
     this.error = '';
     if (!this.compra.proveedorId || this.detalles.length === 0) return;
 
     const payload = {
-      compra: { proveedorId: this.compra.proveedorId },
+      compra: {
+        proveedorId: this.compra.proveedorId,
+        tipoComprobante: this.compra.tipoComprobante || null
+      },
       detalles: this.detalles.map(d => ({
         productoId: d.productoId,
         cantidad: d.cantidad,

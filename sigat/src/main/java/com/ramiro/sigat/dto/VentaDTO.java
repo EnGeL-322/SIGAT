@@ -11,6 +11,7 @@ import lombok.*;
 public class VentaDTO {
     private Long id;
     private String numeroVenta;
+    private String tipoComprobante;
     @NotNull(message = "Debe seleccionar un cliente")
     private Long clienteId;
     private String clienteNombre;

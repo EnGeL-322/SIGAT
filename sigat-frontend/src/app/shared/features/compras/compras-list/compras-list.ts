@@ -18,6 +18,7 @@ export class ComprasListComponent implements OnInit {
   detailModal = false;
   selected: any = null;
   error = '';
+  busqueda = '';
   imeiModal = false;
   imeisDelDetalle: any[] = [];
   detalleSeleccionado: any = null;
@@ -71,6 +72,20 @@ export class ComprasListComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  filtrar(): void {
+    this.paginaActual = 1;
+    this.cdr.detectChanges();
+  }
+
+  get comprasFiltradas(): any[] {
+    const q = this.busqueda.trim().toLowerCase();
+    if (!q) return this.compras;
+    return this.compras.filter(c =>
+      (c.numeroCompra || '').toLowerCase().includes(q) ||
+      (c.proveedorNombre || '').toLowerCase().includes(q)
+    );
+  }
+
   get imeisFiltrados(): any[] {
     const q = this.busquedaImei.trim().toLowerCase();
     if (!q) return this.imeisDelDetalle;
@@ -81,11 +96,11 @@ export class ComprasListComponent implements OnInit {
 
   get comprasPaginadas(): any[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    return this.compras.slice(inicio, inicio + this.itemsPorPagina);
+    return this.comprasFiltradas.slice(inicio, inicio + this.itemsPorPagina);
   }
 
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.compras.length / this.itemsPorPagina));
+    return Math.max(1, Math.ceil(this.comprasFiltradas.length / this.itemsPorPagina));
   }
 
   get paginas(): number[] {
@@ -93,12 +108,12 @@ export class ComprasListComponent implements OnInit {
   }
 
   get inicioPagina(): number {
-    if (!this.compras.length) return 0;
+    if (!this.comprasFiltradas.length) return 0;
     return (this.paginaActual - 1) * this.itemsPorPagina + 1;
   }
 
   get finPagina(): number {
-    return Math.min(this.paginaActual * this.itemsPorPagina, this.compras.length);
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.comprasFiltradas.length);
   }
 
   cambiarPagina(pagina: number): void {

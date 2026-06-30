@@ -313,6 +313,14 @@ export class VentasFormComponent implements OnInit {
     this.detalles.splice(index, 1);
   }
 
+  get previewNumeroVenta(): string {
+    switch (this.venta.tipoComprobante) {
+      case 'BOLETA':  return 'B001-XXXXXX';
+      case 'FACTURA': return 'F001-XXXXXX';
+      default: return '';
+    }
+  }
+
   guardar(): void {
     this.error = '';
     if (!this.venta.clienteId || this.detalles.length === 0) return;
@@ -321,7 +329,8 @@ export class VentasFormComponent implements OnInit {
       venta: {
         clienteId: this.venta.clienteId,
         vendedorId: this.vendedorId,
-        vendedorNombre: this.vendedorNombre
+        vendedorNombre: this.vendedorNombre,
+        tipoComprobante: this.venta.tipoComprobante || null
       },
       detalles: this.detalles.map(d => ({
         productoId: d.productoId,

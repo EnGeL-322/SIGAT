@@ -20,6 +20,7 @@ export class VentasListComponent implements OnInit {
   phoneModal = false;
   selected: any = null;
   error = '';
+  busqueda = '';
   busquedaImei = '';
   itemsPorPagina = 10;
   paginaActual = 1;
@@ -66,6 +67,21 @@ export class VentasListComponent implements OnInit {
     this.phoneModal = true;
   }
 
+  filtrar(): void {
+    this.paginaActual = 1;
+    this.cdr.detectChanges();
+  }
+
+  get ventasFiltradas(): any[] {
+    const q = this.busqueda.trim().toLowerCase();
+    if (!q) return this.ventas;
+    return this.ventas.filter(v =>
+      (v.clienteNombre || '').toLowerCase().includes(q) ||
+      (v.numeroVenta || '').toLowerCase().includes(q) ||
+      (v.vendedorNombre || '').toLowerCase().includes(q)
+    );
+  }
+
   get detallesFiltrados(): any[] {
     const q = this.busquedaImei.trim().toLowerCase();
     if (!q) return this.detalles;
@@ -77,11 +93,11 @@ export class VentasListComponent implements OnInit {
 
   get ventasPaginadas(): any[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    return this.ventas.slice(inicio, inicio + this.itemsPorPagina);
+    return this.ventasFiltradas.slice(inicio, inicio + this.itemsPorPagina);
   }
 
   get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.ventas.length / this.itemsPorPagina));
+    return Math.max(1, Math.ceil(this.ventasFiltradas.length / this.itemsPorPagina));
   }
 
   get paginas(): number[] {
@@ -89,12 +105,12 @@ export class VentasListComponent implements OnInit {
   }
 
   get inicioPagina(): number {
-    if (!this.ventas.length) return 0;
+    if (!this.ventasFiltradas.length) return 0;
     return (this.paginaActual - 1) * this.itemsPorPagina + 1;
   }
 
   get finPagina(): number {
-    return Math.min(this.paginaActual * this.itemsPorPagina, this.ventas.length);
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.ventasFiltradas.length);
   }
 
   cambiarPagina(pagina: number): void {

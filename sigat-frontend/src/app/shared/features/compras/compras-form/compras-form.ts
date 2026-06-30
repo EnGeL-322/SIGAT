@@ -21,6 +21,10 @@ export class ComprasFormComponent implements OnInit {
   mostrarDropdownProveedor = false;
   proveedoresFiltrados: any[] = [];
 
+  busquedaProducto = '';
+  mostrarDropdownProducto = false;
+  productosFiltrados: any[] = [];
+
   showProveedorModal = false;
   guardandoProveedor = false;
   proveedorError = '';
@@ -139,6 +143,42 @@ export class ComprasFormComponent implements OnInit {
     });
   }
 
+  // --- Producto dropdown ---
+
+  abrirDropdownProducto(): void {
+    this.productosFiltrados = [...this.productos];
+    this.mostrarDropdownProducto = true;
+  }
+
+  filtrarProductos(): void {
+    const q = this.busquedaProducto.toLowerCase();
+    this.productosFiltrados = this.productos.filter(p =>
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.marca || '').toLowerCase().includes(q) ||
+      (p.modelo || '').toLowerCase().includes(q)
+    );
+    this.mostrarDropdownProducto = true;
+    if (!this.busquedaProducto) {
+      this.detalle.productoId = null;
+      this.detalle.precioUnitario = 0;
+    }
+  }
+
+  seleccionarProducto(p: any): void {
+    this.detalle.productoId = p.id;
+    this.busquedaProducto = p.nombre;
+    this.mostrarDropdownProducto = false;
+    this.productoCambiado();
+    this.cdr.detectChanges();
+  }
+
+  cerrarDropdownProducto(): void {
+    setTimeout(() => {
+      this.mostrarDropdownProducto = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
   // --- Detalle compra ---
 
   productoCambiado(): void {
@@ -165,6 +205,7 @@ export class ComprasFormComponent implements OnInit {
       cantidad: 1,
       precioUnitario: 0
     };
+    this.busquedaProducto = '';
   }
 
   eliminarDetalle(index: number): void {

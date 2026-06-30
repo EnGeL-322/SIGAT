@@ -87,10 +87,24 @@
     </div>
 
     <div class="purchase-detail-editor">
-      <select [(ngModel)]="detalle.productoId" (ngModelChange)="productoCambiado()">
-        <option [ngValue]="null">Producto</option>
-        <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.nombre }}</option>
-      </select>
+      <div class="search-select">
+        <input type="text"
+               [(ngModel)]="busquedaProducto"
+               (focus)="abrirDropdownProducto()"
+               (blur)="cerrarDropdownProducto()"
+               (input)="filtrarProductos()"
+               placeholder="Buscar producto..."
+               autocomplete="off">
+        <div class="search-dropdown" *ngIf="mostrarDropdownProducto">
+          <div *ngIf="!productosFiltrados.length" class="search-option search-empty">Sin resultados</div>
+          <div class="search-option"
+               *ngFor="let p of productosFiltrados"
+               (mousedown)="seleccionarProducto(p)">
+            {{ p.nombre }}
+            <small *ngIf="p.marca">{{ p.marca }} · {{ p.modelo }}</small>
+          </div>
+        </div>
+      </div>
       <input type="number" min="1" [(ngModel)]="detalle.cantidad" placeholder="Cantidad">
       <input type="number" [(ngModel)]="detalle.precioUnitario" placeholder="Precio unitario">
       <input disabled [value]="detalle.cantidad ? '0/' + detalle.cantidad : '0/0'">

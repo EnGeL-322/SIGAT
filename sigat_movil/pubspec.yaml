@@ -43,6 +43,9 @@ dependencies:
   sqflite: ^2.4.1
   path: ^1.9.0
 
+  # Escaneo de codigos de barra e IMEI con la camara del dispositivo.
+  mobile_scanner: ^5.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

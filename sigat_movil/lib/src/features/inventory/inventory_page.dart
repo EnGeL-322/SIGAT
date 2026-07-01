@@ -52,10 +52,21 @@ class _InventoryPageState extends State<InventoryPage> {
         ModuleHeader(
           eyebrow: 'Inventario',
           title: 'Stock general',
-          trailing: IconButton.filledTonal(
-            onPressed: _showSoldImeis,
-            icon: const Icon(Icons.sell_outlined),
-            tooltip: 'IMEI vendidos',
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton.filledTonal(
+                onPressed: () => Navigator.pushNamed(context, '/scanner'),
+                icon: const Icon(Icons.qr_code_scanner_rounded),
+                tooltip: 'Escanear IMEI',
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                onPressed: _showSoldImeis,
+                icon: const Icon(Icons.sell_outlined),
+                tooltip: 'IMEI vendidos',
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),

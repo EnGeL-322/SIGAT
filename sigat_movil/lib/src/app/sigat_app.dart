@@ -13,6 +13,7 @@ import '../features/dashboard/dashboard_page.dart';
 import '../features/inventory/inventory_page.dart';
 import '../features/operations/operations_pages.dart';
 import '../features/reports/reports_pages.dart';
+import '../features/scanner/imei_scanner_page.dart';
 import '../shared/theme/app_theme.dart';
 import '../shared/widgets/app_shell.dart';
 
@@ -192,6 +193,7 @@ class _SigatAppState extends State<SigatApp> with WidgetsBindingObserver {
         _shell(route, 'Usuarios', const UsersPage()),
         name: route,
       ),
+      '/scanner' => _page(const ImeiScannerPage(), name: route),
       _ => _page(const LoginPage(), name: '/login'),
     };
   }

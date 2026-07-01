@@ -167,6 +167,10 @@ export class ApiService {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/imei/producto/${productoId}`));
   }
 
+  obtenerIMEIPorNumero(numero: string): Observable<any> {
+    return this.refreshAfter(this.http.get(`${this.apiUrl}/imei/numero/${encodeURIComponent(numero)}`));
+  }
+
   obtenerUsuarios(): Observable<any> {
     return this.refreshAfter(this.http.get(`${this.apiUrl}/usuarios`));
   }

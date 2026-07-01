@@ -39,6 +39,16 @@ export class VentasFormComponent implements OnInit {
   clienteError = '';
   nuevoCliente = this.clienteVacio();
 
+  // Scanner
+  showScannerModal = false;
+  scannerMode: 'camera' | 'usb' = 'camera';
+  scannerInput = '';
+  scannerLoading = false;
+  scannerError = '';
+  scannerResult: any = null;
+  private _scanStream: MediaStream | null = null;
+  private _scanInterval: ReturnType<typeof setInterval> | null = null;
+
   venta = {
     clienteId: null as number | null,
     fecha: new Date().toISOString().slice(0, 10),
@@ -311,6 +321,143 @@ export class VentasFormComponent implements OnInit {
 
   eliminarDetalle(index: number): void {
     this.detalles.splice(index, 1);
+  }
+
+  // --- Scanner IMEI ---
+
+  abrirScanner(): void {
+    this.showScannerModal = true;
+    this.scannerMode = 'camera';
+    this.scannerInput = '';
+    this.scannerError = '';
+    this.scannerResult = null;
+    this.cdr.detectChanges();
+    setTimeout(() => this.iniciarCamara(), 300);
+  }
+
+  cerrarScanner(): void {
+    this.detenerCamara();
+    this.showScannerModal = false;
+    this.cdr.detectChanges();
+  }
+
+  cambiarModoScanner(mode: 'camera' | 'usb'): void {
+    this.detenerCamara();
+    this.scannerMode = mode;
+    this.scannerError = '';
+    this.scannerResult = null;
+    this.cdr.detectChanges();
+    if (mode === 'camera') {
+      setTimeout(() => this.iniciarCamara(), 300);
+    }
+  }
+
+  async iniciarCamara(): Promise<void> {
+    if (typeof (window as any).BarcodeDetector === 'undefined') {
+      this.scannerError = 'Tu navegador no soporta escaneo por camara. Usa Chrome/Edge o cambia a Lector USB.';
+      this.scannerMode = 'usb';
+      this.cdr.detectChanges();
+      return;
+    }
+    try {
+      this._scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = document.getElementById('imei-scanner-video') as HTMLVideoElement;
+      if (!video) return;
+      video.srcObject = this._scanStream;
+      await video.play();
+
+      const detector = new (window as any).BarcodeDetector({
+        formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e', 'code_39', 'code_93']
+      });
+
+      this._scanInterval = setInterval(async () => {
+        if (!video || video.readyState < 2 || this.scannerLoading || this.scannerResult) return;
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            this.detenerCamara();
+            this.buscarIMEI(barcodes[0].rawValue);
+          }
+        } catch (_) { /* ignored */ }
+      }, 500);
+
+      this.cdr.detectChanges();
+    } catch (err: any) {
+      this.scannerError = 'No se pudo acceder a la camara. ' + (err?.message || 'Verifica los permisos.') + ' Usa el Lector USB.';
+      this.scannerMode = 'usb';
+      this.cdr.detectChanges();
+    }
+  }
+
+  detenerCamara(): void {
+    if (this._scanInterval) { clearInterval(this._scanInterval); this._scanInterval = null; }
+    if (this._scanStream) { this._scanStream.getTracks().forEach(t => t.stop()); this._scanStream = null; }
+  }
+
+  onScannerKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      const val = this.scannerInput.trim();
+      if (val) this.buscarIMEI(val);
+    }
+  }
+
+  buscarIMEI(numero: string): void {
+    this.scannerLoading = true;
+    this.scannerError = '';
+    this.scannerResult = null;
+    this.cdr.detectChanges();
+
+    this.api.obtenerIMEIPorNumero(numero).subscribe({
+      next: (res: any) => {
+        const data = res?.datos;
+        if (!data) {
+          this.scannerError = 'Producto no encontrado para ese codigo.';
+        } else {
+          this.scannerResult = data;
+        }
+        this.scannerLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.scannerError = 'Producto no encontrado para ese codigo.';
+        this.scannerLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  usarIMEIEscaneado(): void {
+    const imei = this.scannerResult;
+    if (!imei) return;
+
+    const producto = this.productos.find((p: any) => p.id === imei.productoId);
+    if (producto) {
+      this.detalle.productoId = producto.id;
+      this.busquedaProducto = producto.nombre;
+      this.detalle.precioUnitario = Number(producto.precio || 0);
+      this.imeisDisponibles = [];
+
+      this.api.obtenerIMEIPorProducto(imei.productoId).subscribe((r: any) => {
+        this.imeisDisponibles = (r?.datos || []).filter((i: any) => i.estado === 'EN_STOCK');
+        if (imei.estado === 'EN_STOCK') {
+          this.detalle.imeiId = imei.id;
+          this.detalle.cantidad = 1;
+        }
+        this.cdr.detectChanges();
+      });
+    }
+
+    this.cerrarScanner();
+  }
+
+  escanearNuevo(): void {
+    this.scannerResult = null;
+    this.scannerError = '';
+    this.scannerInput = '';
+    this.cdr.detectChanges();
+    if (this.scannerMode === 'camera') {
+      setTimeout(() => this.iniciarCamara(), 300);
+    }
   }
 
   get previewNumeroVenta(): string {

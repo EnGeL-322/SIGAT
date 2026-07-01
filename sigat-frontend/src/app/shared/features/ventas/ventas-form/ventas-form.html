@@ -132,10 +132,19 @@
 
           <label>
             <span>IMEI</span>
-            <select [(ngModel)]="detalle.imeiId" (ngModelChange)="imeiCambiado()">
-              <option [ngValue]="null">Automatico</option>
-              <option *ngFor="let imei of imeisDisponibles" [ngValue]="imei.id">{{ imei.numero }}</option>
-            </select>
+            <div class="imei-input-row">
+              <select [(ngModel)]="detalle.imeiId" (ngModelChange)="imeiCambiado()">
+                <option [ngValue]="null">Automatico</option>
+                <option *ngFor="let imei of imeisDisponibles" [ngValue]="imei.id">{{ imei.numero }}</option>
+              </select>
+              <button type="button" class="scan-imei-btn" (click)="abrirScanner()" title="Escanear IMEI">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                </svg>
+              </button>
+            </div>
           </label>
 
           <label>
@@ -192,6 +201,78 @@
       <div class="operation-save-area">
         <div class="total-box">TOTAL: {{ total() | number:'1.2-2' }}</div>
         <button class="primary-btn blue-save" type="button" (click)="guardar()">Guardar venta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner IMEI -->
+  <div class="scanner-backdrop" *ngIf="showScannerModal" (click)="$event.stopPropagation()">
+    <div class="scanner-modal">
+      <button class="scanner-close-btn" type="button" (click)="cerrarScanner()">✕</button>
+      <h3 class="scanner-title">Escanear IMEI</h3>
+
+      <div class="scanner-tabs" *ngIf="!scannerResult && !scannerLoading">
+        <button type="button" [class.scanner-tab-active]="scannerMode === 'camera'" (click)="cambiarModoScanner('camera')">Camara</button>
+        <button type="button" [class.scanner-tab-active]="scannerMode === 'usb'" (click)="cambiarModoScanner('usb')">Lector USB</button>
+      </div>
+
+      <div class="scanner-cam-area" *ngIf="scannerMode === 'camera' && !scannerResult && !scannerLoading && !scannerError">
+        <div class="scanner-cam-wrap">
+          <video id="imei-scanner-video" autoplay playsinline muted class="scanner-video"></video>
+          <div class="scanner-scan-line"></div>
+          <div class="scanner-cam-overlay"><p class="scanner-cam-label">Apunta al codigo de barras del IMEI</p></div>
+        </div>
+      </div>
+
+      <div class="scanner-usb-area" *ngIf="scannerMode === 'usb' && !scannerResult && !scannerLoading">
+        <div class="usb-icon">⌨</div>
+        <p>Conecta el lector USB o escribe el numero:</p>
+        <input type="text" class="usb-scan-input"
+               [(ngModel)]="scannerInput"
+               (keydown)="onScannerKeydown($event)"
+               [disabled]="scannerLoading"
+               placeholder="Escanea o escribe el IMEI...">
+        <button type="button" class="primary-btn"
+                [disabled]="scannerLoading || !scannerInput.trim()"
+                (click)="buscarIMEI(scannerInput.trim())">Buscar IMEI</button>
+      </div>
+
+      <div class="scanner-loading-area" *ngIf="scannerLoading">
+        <div class="scanner-spinner"></div>
+        <p>Buscando IMEI...</p>
+      </div>
+
+      <div class="scanner-error-box" *ngIf="scannerError && !scannerLoading && !scannerResult">
+        <div class="error-icon">✕</div>
+        <p>{{ scannerError }}</p>
+        <button type="button" class="secondary-btn" (click)="escanearNuevo()">Intentar de nuevo</button>
+      </div>
+
+      <div class="scanner-result-box" *ngIf="scannerResult && !scannerLoading">
+        <div class="result-check">✓</div>
+        <h4>IMEI Encontrado</h4>
+        <div class="result-grid">
+          <div class="result-field"><span>IMEI</span><strong>{{ scannerResult.numero }}</strong></div>
+          <div class="result-field"><span>Producto</span><strong>{{ scannerResult.productoNombre }}</strong></div>
+          <div class="result-field">
+            <span>Estado</span>
+            <strong [class.estado-stock]="scannerResult.estado === 'EN_STOCK'"
+                    [class.estado-vendido]="scannerResult.estado !== 'EN_STOCK'">
+              {{ scannerResult.estado === 'EN_STOCK' ? 'En stock' : scannerResult.estado }}
+            </strong>
+          </div>
+          <div class="result-field" *ngIf="scannerResult.numeroVenta"><span>Venta</span><strong>{{ scannerResult.numeroVenta }}</strong></div>
+          <div class="result-field" *ngIf="scannerResult.clienteNombre"><span>Cliente</span><strong>{{ scannerResult.clienteNombre }}</strong></div>
+        </div>
+        <p class="not-available-hint" *ngIf="scannerResult.estado !== 'EN_STOCK'">
+          Este equipo no esta disponible para la venta.
+        </p>
+        <div class="result-actions">
+          <button type="button" class="secondary-btn" (click)="escanearNuevo()">Escanear otro</button>
+          <button type="button" class="primary-btn blue-save"
+                  *ngIf="scannerResult.estado === 'EN_STOCK'"
+                  (click)="usarIMEIEscaneado()">Usar este IMEI</button>
+        </div>
       </div>
     </div>
   </div>

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ import { AuthService } from '../../../../core/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   error = '';
   loading = false;
   loginForm: FormGroup;
@@ -21,13 +21,16 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) {
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard'], { replaceUrl: true });
-    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+  }
+
+  ngOnInit(): void {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard'], { replaceUrl: true });
+    }
   }
 
   onLogin(): void {

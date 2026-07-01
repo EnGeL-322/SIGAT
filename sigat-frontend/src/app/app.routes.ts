@@ -17,10 +17,10 @@ import { ReporteVentasComponent } from './shared/features/reportes/reporte-venta
 import { ReporteComprasComponent } from './shared/features/reportes/reporte-compras/reporte-compras';
 import { ReporteBajoStockComponent } from './shared/features/reportes/reporte-bajo-stock/reporte-bajo-stock';
 import { adminGuard } from './core/admin.guard';
-import { authChildGuard, authGuard } from './core/auth.guard';
+import { authChildGuard, authGuard, rootGuard } from './core/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', pathMatch: 'full', canActivate: [rootGuard], component: LoginComponent },
 
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },

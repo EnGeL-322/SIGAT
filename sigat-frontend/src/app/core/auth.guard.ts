@@ -15,3 +15,11 @@ const requireSession = () => {
 
 export const authGuard: CanActivateFn = () => requireSession();
 export const authChildGuard: CanActivateChildFn = () => requireSession();
+
+export const rootGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isAuthenticated()
+    ? router.createUrlTree(['/dashboard'])
+    : router.createUrlTree(['/login']);
+};

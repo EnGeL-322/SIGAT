@@ -21,6 +21,9 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard'], { replaceUrl: true });
+    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]

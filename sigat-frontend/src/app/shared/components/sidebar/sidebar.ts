@@ -19,6 +19,6 @@ export class SidebarComponent {
 
   logout(): void {
     this.authService.logout();
-    this.router.navigateByUrl('/login', { replaceUrl: true });
+    window.location.replace('/login');
   }
 }

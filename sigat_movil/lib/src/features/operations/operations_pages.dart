@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/session/session_controller.dart';
@@ -538,25 +539,37 @@ class _MovementFormPageState extends State<MovementFormPage> {
                     const SizedBox(height: 12),
 
                     // --- Product picker ---
-                    InkWell(
-                      onTap: _pickProduct,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Producto',
-                          suffixIcon: Icon(Icons.search),
-                        ),
-                        child: Text(
-                          _productDisplayName.isEmpty
-                              ? 'Buscar producto...'
-                              : _productDisplayName,
-                          style: TextStyle(
-                            color: _productDisplayName.isEmpty
-                                ? Theme.of(context).hintColor
-                                : null,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickProduct,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Producto',
+                                suffixIcon: Icon(Icons.search),
+                              ),
+                              child: Text(
+                                _productDisplayName.isEmpty
+                                    ? 'Buscar producto...'
+                                    : _productDisplayName,
+                                style: TextStyle(
+                                  color: _productDisplayName.isEmpty
+                                      ? Theme.of(context).hintColor
+                                      : null,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          onPressed: _scanProduct,
+                          icon: const Icon(Icons.qr_code_scanner_rounded),
+                          tooltip: 'Escanear IMEI',
+                        ),
+                      ],
                     ),
                     if (_productId != null && _selectedProduct != null)
                       _stockBadge(),
@@ -812,6 +825,32 @@ class _MovementFormPageState extends State<MovementFormPage> {
         _productDisplayName = _productLabel(selected);
         _priceController.text =
             _asNum(selected['precio']).toStringAsFixed(2);
+      });
+    }
+  }
+
+  Future<void> _scanProduct() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => _ImeiScanPickerSheet(api: SessionScope.read(ctx).api),
+    );
+    if (result == null || !mounted) return;
+
+    final productoId = _asInt(result['productoId']);
+    if (productoId == null) return;
+
+    final product = _products.cast<Map<String, dynamic>?>().firstWhere(
+          (p) => _asInt(p?['id']) == productoId,
+          orElse: () => null,
+        );
+
+    if (product != null) {
+      setState(() {
+        _productId = _asInt(product['id']);
+        _productDisplayName = _productLabel(product);
+        _priceController.text = _asNum(product['precio']).toStringAsFixed(2);
       });
     }
   }
@@ -1389,4 +1428,447 @@ int? _asInt(Object? value) {
 num _asNum(Object? value) {
   if (value is num) return value;
   return num.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// Escaner de IMEI para seleccionar producto en formularios
+// ---------------------------------------------------------------------------
+
+class _ImeiScanPickerSheet extends StatefulWidget {
+  const _ImeiScanPickerSheet({required this.api});
+
+  final ApiClient api;
+
+  @override
+  State<_ImeiScanPickerSheet> createState() => _ImeiScanPickerSheetState();
+}
+
+class _ImeiScanPickerSheetState extends State<_ImeiScanPickerSheet>
+    with SingleTickerProviderStateMixin {
+  final MobileScannerController _controller = MobileScannerController();
+  late final AnimationController _lineAnim;
+
+  bool _loading = false;
+  Map<String, dynamic>? _result;
+  String? _errorMessage;
+  String? _lastScanned;
+
+  @override
+  void initState() {
+    super.initState();
+    _lineAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _lineAnim.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_loading || _result != null) return;
+    final code = capture.barcodes.firstOrNull?.rawValue;
+    if (code == null || code == _lastScanned) return;
+    _lastScanned = code;
+    _buscarIMEI(code);
+  }
+
+  Future<void> _buscarIMEI(String numero) async {
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      final raw =
+          await widget.api.get('/imei/numero/${Uri.encodeComponent(numero)}');
+      final data = ApiClient.mapFromResponse(raw);
+      setState(() {
+        _loading = false;
+        _result = data;
+      });
+    } catch (_) {
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Producto no encontrado para ese codigo.';
+        _lastScanned = null;
+      });
+    }
+  }
+
+  void _reiniciar() {
+    setState(() {
+      _result = null;
+      _errorMessage = null;
+      _lastScanned = null;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.78,
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 8, 0),
+            child: Row(
+              children: [
+                const Icon(Icons.qr_code_scanner_rounded,
+                    color: Color(0xFF5B6CF0)),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Escanear IMEI',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1F2A44),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 16),
+          Expanded(child: _body()),
+        ],
+      ),
+    );
+  }
+
+  Widget _body() {
+    if (_loading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF5B6CF0)),
+            SizedBox(height: 16),
+            Text('Buscando IMEI...'),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: const Icon(Icons.search_off_rounded,
+                  size: 32, color: Color(0xFFDC2626)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Producto no encontrado',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(_errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF6B7280))),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _reiniciar,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF5B6CF0),
+                ),
+                icon: const Icon(Icons.qr_code_scanner_rounded),
+                label: const Text('Escanear otro'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_result != null) {
+      final enStock = (_result!['estado'] ?? '') == 'EN_STOCK';
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: enStock
+                    ? const Color(0xFFDCFCE7)
+                    : const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Icon(
+                enStock
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.cancel_outlined,
+                size: 28,
+                color: enStock
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFDC2626),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              enStock ? 'IMEI Encontrado' : 'IMEI no disponible',
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              enStock
+                  ? 'Este equipo esta disponible en stock'
+                  : 'Este equipo no esta disponible para venta',
+              style: TextStyle(
+                color: enStock
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFDC2626),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: Color(0xFFE5E7EB)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    _PickField('IMEI', _result!['numero']?.toString()),
+                    _PickField('Producto', _result!['productoNombre']?.toString()),
+                    _PickField('Marca', _result!['marca']?.toString()),
+                    _PickField('Modelo', _result!['modelo']?.toString()),
+                    _PickField(
+                      'Estado',
+                      enStock ? 'En stock' : _result!['estado']?.toString(),
+                      valueColor: enStock
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFDC2626),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (enStock)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.pop(context, _result),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF5B6CF0),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Usar este producto',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _reiniciar,
+                icon: const Icon(Icons.qr_code_scanner_rounded),
+                label: const Text('Escanear otro'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Scanner view
+    const scanW = 240.0;
+    const scanH = 150.0;
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              MobileScanner(controller: _controller, onDetect: _onDetect),
+              CustomPaint(
+                painter: _ScanOverlay(scanW: scanW, scanH: scanH),
+              ),
+              AnimatedBuilder(
+                animation: _lineAnim,
+                builder: (context, _) {
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cx = constraints.maxWidth / 2;
+                      final cy = constraints.maxHeight / 2;
+                      final top =
+                          cy - scanH / 2 + _lineAnim.value * (scanH - 2);
+                      return Positioned(
+                        left: cx - scanW / 2 + 4,
+                        top: top,
+                        width: scanW - 8,
+                        height: 2,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5B6CF0),
+                            borderRadius: BorderRadius.circular(1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF5B6CF0).withOpacity(0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          child: Column(
+            children: [
+              const Icon(Icons.qr_code_scanner_rounded,
+                  size: 28, color: Color(0xFF5B6CF0)),
+              const SizedBox(height: 8),
+              const Text(
+                'Apunta la camara al codigo de barras del IMEI',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF4A5568),
+                    fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PickField extends StatelessWidget {
+  const _PickField(this.label, this.value, {this.valueColor});
+
+  final String label;
+  final String? value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF8898AA),
+                    fontWeight: FontWeight.w500)),
+          ),
+          Expanded(
+            child: Text(
+              value ?? '—',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? const Color(0xFF1F2A44),
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScanOverlay extends CustomPainter {
+  const _ScanOverlay({required this.scanW, required this.scanH});
+
+  final double scanW;
+  final double scanH;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final left = cx - scanW / 2;
+    final top = cy - scanH / 2;
+    final scanRect = Rect.fromLTWH(left, top, scanW, scanH);
+
+    canvas.drawPath(
+      Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+        Path()
+          ..addRRect(
+              RRect.fromRectAndRadius(scanRect, const Radius.circular(8))),
+      ),
+      Paint()..color = Colors.black.withOpacity(0.5),
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(scanRect, const Radius.circular(8)),
+      Paint()
+        ..color = Colors.white.withOpacity(0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    const cLen = 20.0;
+    final p = Paint()
+      ..color = const Color(0xFF5B6CF0)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    canvas
+      ..drawLine(Offset(left, top + cLen), Offset(left, top), p)
+      ..drawLine(Offset(left, top), Offset(left + cLen, top), p)
+      ..drawLine(
+          Offset(left + scanW - cLen, top), Offset(left + scanW, top), p)
+      ..drawLine(
+          Offset(left + scanW, top), Offset(left + scanW, top + cLen), p)
+      ..drawLine(
+          Offset(left, top + scanH - cLen), Offset(left, top + scanH), p)
+      ..drawLine(
+          Offset(left, top + scanH), Offset(left + cLen, top + scanH), p)
+      ..drawLine(Offset(left + scanW - cLen, top + scanH),
+          Offset(left + scanW, top + scanH), p)
+      ..drawLine(Offset(left + scanW, top + scanH - cLen),
+          Offset(left + scanW, top + scanH), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

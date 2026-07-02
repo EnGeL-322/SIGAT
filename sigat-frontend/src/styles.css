@@ -262,6 +262,7 @@ img[src$="logo-sigat.png"]:hover {
   box-shadow: var(--panel-shadow);
   overflow-x: auto;
   overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table-header,
@@ -1208,32 +1209,13 @@ img[src$="logo-sigat.png"]:hover {
     min-width: min(100%, 340px);
   }
 
-  .grid-productos,
-  .grid-proveedores,
-  .grid-clientes,
-  .grid-inventario,
-  .grid-compras,
-  .grid-ventas,
-  .grid-usuarios,
-  .grid-reporte-stock,
-  .grid-bajo-stock,
-  .grid-reporte-compras,
-  .grid-reporte-ventas {
-    grid-template-columns: 1fr;
-  }
-
-  .table-header {
-    display: none;
-  }
-
-  .table-row {
-    padding: 16px;
-    min-width: 0;
-  }
-
-  .table-row > span {
-    white-space: normal;
-    text-overflow: clip;
+  /* Listados: en pantallas reducidas la tabla mantiene sus columnas y el
+     encabezado, y se desplaza horizontalmente dentro de .table-shell. Antes se
+     colapsaba a una sola columna ocultando el encabezado, lo que dejaba los
+     valores apilados SIN etiqueta (defecto CP-09). El scroll horizontal
+     conserva la relacion columna-dato en cualquier tamano de pantalla. */
+  .table-shell {
+    padding: 12px;
   }
 
   .form-grid,

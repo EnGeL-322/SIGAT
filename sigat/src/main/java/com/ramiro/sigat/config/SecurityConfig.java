@@ -52,6 +52,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        // Documentacion de la API (Swagger UI / OpenAPI) accesible sin token
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**"
+                        ).permitAll()
                         .requestMatchers("/usuarios/**", "/roles/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

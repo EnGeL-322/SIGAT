@@ -134,8 +134,18 @@ class ApiClient {
       final decoded = _decodeBody(rawBody);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        if (response.statusCode == 401) {
+        // Spring Security responde 403 (no 401) cuando falta o expira el token.
+        // Fuera de los endpoints de autenticacion, tratamos 401 y 403 como
+        // "sesion invalida": se cierra la sesion y se vuelve al login, en vez
+        // de mostrar un "Error HTTP 403" crudo al usuario.
+        final esAuth = path.startsWith('/auth');
+        if (!esAuth &&
+            (response.statusCode == 401 || response.statusCode == 403)) {
           onUnauthorized?.call();
+          throw ApiException(
+            'Tu sesion expiro o no es valida. Inicia sesion de nuevo.',
+            statusCode: response.statusCode,
+          );
         }
         throw ApiException(
           messageFromResponse(decoded) ?? 'Error HTTP ${response.statusCode}',

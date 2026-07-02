@@ -1,6 +1,6 @@
 class AppConfig {
   static const apiBaseUrl = String.fromEnvironment(
     'SIGAT_API_URL',
-    defaultValue: 'http://44.211.181.183:8081/api',
+    defaultValue: 'http://3.238.34.3:8081/api',
   );
 }
